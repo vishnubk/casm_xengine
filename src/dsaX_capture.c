@@ -82,8 +82,6 @@ void dsaX_dbgpu_cleanup (dada_hdu_t * out)
       syslog(LOG_ERR, "could not unlock read on hdu_out");
     }
   dada_hdu_destroy (out);
-
-  
   
 }
 
@@ -953,7 +951,8 @@ int main (int argc, char *argv[]) {
 
 	  // Now you can use the extracted values
 	  uint64_t seq_no = details.timestamp;
-	  uint16_t ant_id = details.board_id;
+    uint16_t aid = details.chan0/512 - 1;  // This will give values 0,1,2,3,4,5
+    
 	  if (UTC_START == 0) UTC_START = details.timestamp + 10000;
 
 	  // You can also log the details if needed
