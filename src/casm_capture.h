@@ -29,7 +29,7 @@
 #include "ascii_header.h"
 #include "dada_udp.h"
 
-#include "dsaX_def.h"
+#include "casm_def.h"
 
 #define DSAX_UDPDB_BUF_CLEAR = 0
 #define DSAX_UDPDB_BUF_FULL = 1
