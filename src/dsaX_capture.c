@@ -60,7 +60,7 @@ struct casm_f_header {
 /* global variables */
 int quit_threads = 0;
 char STATE[20];
-uint64_t UTC_START = 20000; // Liam Hack... we don't have M&C yet so it will not wait for a UTC..
+uint64_t UTC_START = 0; // Liam Hack... we don't have M&C yet so it will not wait for a UTC..
 uint64_t UTC_STOP = 40000000000;
 int MONITOR = 0;
 char iP[100];
@@ -434,6 +434,7 @@ void stats_thread(void * arg) {
   {
 
     /* get a snapshot of the data as quickly as possible */
+
     b_rcv_curr = ctx->bytes->received;
     b_drp_curr = ctx->bytes->dropped;
     s_rcv_curr = ctx->n_sleeps;
@@ -951,39 +952,12 @@ int main (int argc, char *argv[]) {
 
 	  // Now you can use the extracted values
 	  uint64_t seq_no = details.timestamp;
-    uint16_t aid = details.chan0/512 - 1;  // This will give values 0,1,2,3,4,5
+	  uint16_t aid = details.chan0/512;  // This will give values 0,1,2,3,4,5
     
 	  if (UTC_START == 0) UTC_START = details.timestamp + 10000;
-
-	  // You can also log the details if needed
-	  syslog(LOG_INFO, "Packet Details: timestamp=%lu, chan0=%u, board_id=%u, n_chans=%u, n_antpols=%u",
-		 details.timestamp, details.chan0, details.board_id, details.n_chans, details.n_antpols);
-
-          //seq_no = 0;
-          //seq_no |=  (((uint64_t)(udpdb.sock->buf[4]) & 224) >> 5) & 7;
-          //seq_no &= 7;                                                                                                                                                            
-          //seq_no |=  (((uint64_t)(udpdb.sock->buf[3])) << 3) & 2040;
-          //seq_no &= 2047;                                                                                                                                                         
-          //seq_no |=  (((uint64_t)(udpdb.sock->buf[2])) << 11) & 522240;
-          //seq_no &= 524287;                                                                                                                                                       
-          //seq_no |=  (((uint64_t)(udpdb.sock->buf[1])) << 19) & 133693440;
-          //seq_no &= 134217727;                                                                                                                                                    
-          //seq_no |=  (((uint64_t)(udpdb.sock->buf[0])) << 27) & 34225520640;
-          //seq_no &= 34359738367;                                                                                                                                                  
-          /*seq_no = 0;                                                                                                                                                             
-          seq_no |= 224 >> 5;                                                                                                                                                       
-          seq_no |= 255 << 3;                                                                                                                                                       
-          seq_no |= 255 << 11;                                                                                                                                                      
-          seq_no |= 255 << 19;*/
-
-          /*ch_id = 0;                                                                                                                                                              
-          ch_id |= ((unsigned char) (udpdb.sock->buf[4]) & 31) << 8;                                                                                                                
-          ch_id |= (unsigned char) (udpdb.sock->buf[5]);*/
-
-          ant_id = 0;
-          ant_id |= (unsigned char) (udpdb.sock->buf[6]) << 8;
-          ant_id |= (unsigned char) (udpdb.sock->buf[7]);
-          aid = 0;//ant_lookup[(int)(ant_id)];                                                                                                                                      
+ 
+	  //	  syslog(LOG_INFO, "Packet Details: seq=%lu, chan0=%u, board_id=%u, n_chans=%u, aid=%u",
+	  //	 seq_no, details.chan0, details.board_id, details.n_chans, aid);
 
           if (UTC_START==0) UTC_START = seq_no + 10000;
 
@@ -1004,47 +978,24 @@ int main (int argc, char *argv[]) {
 
 	  // Now you can use the extracted values
 	  uint64_t seq_no = details.timestamp;
-	  uint16_t ant_id = details.board_id;
+	  uint16_t aid = details.chan0/512;  // This will give values 0,1,2,3,4,5
+	  
 	  if (UTC_START == 0) UTC_START = details.timestamp + 10000;
 
 	  // You can also log the details if needed
-	  syslog(LOG_INFO, "Packet Details: timestamp=%lu, chan0=%u, board_id=%u, n_chans=%u, n_antpols=%u",
-		 details.timestamp, details.chan0, details.board_id, details.n_chans, details.n_antpols);	  
-
-	  // decode packet header (64 bits)
-	  // 35 bits seq_no (for first spectrum in packet); 13 bits ch_id (for first channel in packet); 16 bits ant ID (for first antenna in packet)
-	  //seq_no = 0;
-	  //seq_no |=  (((uint64_t)(udpdb.sock->buf[4]) & 224) >> 5) & 7;
-	  //seq_no &= 7;
-	  //seq_no |=  (((uint64_t)(udpdb.sock->buf[3])) << 3) & 2040;
-	  //seq_no &= 2047;
-	  //seq_no |=  (((uint64_t)(udpdb.sock->buf[2])) << 11) & 522240;
-	  //seq_no &= 524287;
-	  //seq_no |=  (((uint64_t)(udpdb.sock->buf[1])) << 19) & 133693440;
-	  //seq_no &= 134217727;
-	  //seq_no |=  (((uint64_t)(udpdb.sock->buf[0])) << 27) & 34225520640;
-	  //seq_no &= 34359738367;
-	  /*seq_no = 0;
-	  seq_no |= 224 >> 5;
-	  seq_no |= 255 << 3;
-	  seq_no |= 255 << 11;
-	  seq_no |= 255 << 19;*/
 	  
-	  /*ch_id = 0;
-	  ch_id |= ((unsigned char) (udpdb.sock->buf[4]) & 31) << 8;
-	  ch_id |= (unsigned char) (udpdb.sock->buf[5]);*/
-
-	  ant_id = 0;
-	  ant_id |= (unsigned char) (udpdb.sock->buf[6]) << 8;
-	  ant_id |= (unsigned char) (udpdb.sock->buf[7]);
-	  aid = 0;//ant_lookup[(int)(ant_id)]; Liam Hack
 
 	  if (UTC_START==0) UTC_START = seq_no + 10000;
 	  
 	  //act_seq_no = seq_no*NCHANG*NSNAPS/2 + ant_id*NCHANG/3 + (ch_id-CHOFF)/384; // actual seq no
-	  act_seq_no = seq_no*NSNAPS/4 + aid; // actual seq no
-	  block_seq_no = UTC_START*NSNAPS/4; // seq no corresponding to ant 0 and start of block
+	  act_seq_no = NCHANG*seq_no + aid; // actual seq no
+	  block_seq_no = NCHANG*UTC_START; // seq no corresponding to ant 0 and start of block
 
+	  //syslog(LOG_INFO, "Packet Details: act_seq_no=%lu, block_seq_no=%lu, seq_no=%lu, n_chans=%u, n_antpols=%u",
+
+	  //	 act_seq_no, block_seq_no, seq_no, details.n_chans, aid);	  	  
+
+	  
 	  // check for starting or stopping condition, using continue
 	  //if (DEBUG) printf("%"PRIu64" %"PRIu64" %d\n",seq_no,act_seq_no,ch_id);//syslog(LOG_DEBUG, "seq_byte=%"PRIu64", num_inputs=%d, seq_no=%"PRIu64", ant_id =%"PRIu64", ch_id =%"PRIu64"",seq_byte,udpdb.num_inputs,seq_no,ant_id, ch_id);
 	  //if (seq_no == UTC_START && UTC_START != 10000 && ant_id == 0) canWrite=1;
@@ -1061,7 +1012,6 @@ int main (int argc, char *argv[]) {
 	  }
 	  if (canWrite == 0) continue;
 
-	  
 	  //if (seq_no > UTC_START && UTC_START != 10000) canWrite=1;	  
 	  udpdb.last_seq = seq_no;
 	  //	  syslog(LOG_INFO, "seq_no: %"PRIu64", UTC_START: %"PRIu64", ct_snaps: %d, canWrite: %d", seq_no, UTC_START, ct_snaps, canWrite);
@@ -1076,8 +1026,13 @@ int main (int argc, char *argv[]) {
 	      udpdb.block_end_byte   = (udpdb.block_start_byte + udpdb.hdu_bufsz) - UDP_DATA;
 	      udpdb.capture_started = 1;
 
+
 	      syslog (LOG_INFO, "receive_obs: START [%"PRIu64" - %"PRIu64"]", udpdb.block_start_byte, udpdb.block_end_byte);
 	    }
+
+	  //syslog(LOG_INFO, "Packet belongs in this block: act_seq_no=%lu, block_seq_no=%lu, seq_no=%lu",
+	  //		 act_seq_no, block_seq_no, seq_no);	  	  
+
 
 	  // if capture running
 	  if (udpdb.capture_started)
@@ -1089,7 +1044,7 @@ int main (int argc, char *argv[]) {
 	      // if packet arrived too late, ignore
 	      if (seq_byte < udpdb.block_start_byte)
 		{
-		  //syslog (LOG_INFO, "receive_obs: seq_byte < block_start_byte: %"PRIu64", %"PRIu64"", seq_no, ant_id);
+		  syslog (LOG_INFO, "receive_obs: seq_byte < block_start_byte: %"PRIu64"", seq_no);
 		  udpdb.packets->dropped++;
 		  udpdb.bytes->dropped += UDP_DATA;
 		}
@@ -1104,6 +1059,8 @@ int main (int argc, char *argv[]) {
 		      udpdb.bytes->received += UDP_DATA;
 		      udpdb.block_count++;
 		    }
+		      //		      syslog (LOG_INFO, "Received");
+		  
 		  // packet belongs in subsequent block
 		  else
 		    {

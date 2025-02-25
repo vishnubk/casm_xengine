@@ -28,21 +28,23 @@ trap cleanup EXIT
 
 # Create DADA buffer
 echo "Creating DADA buffer..."
-dada_db -k $DADA_KEY -b $BUFFER_SIZE -n $NUM_BLOCKS -l -p
+echo dada_db -k $DADA_KEY -b $BUFFER_SIZE -n $NUM_BLOCKS -l -p
 
 # Start dumpfil in the background
 echo "Starting dumpfil..."
-$DUMPFIL_PATH -f "${OUTPUT_DIR}/output.fil" -i $DADA_KEY -n 4&
+echo $DUMPFIL_PATH -f "${OUTPUT_DIR}/output.fil" -i $DADA_KEY -n 4&
 
-DUMPFIL_PID=$!
+#DUMPFIL_PID=$!
 
 # Give dumpfil a moment to start up
 sleep 5
 
 # Start packet capture
 echo "Starting packet capture..."
-$CAPTURE_PATH -c 0 -f $CORRCONF -i $CONTROL_IP -j $DATA_IP -p $DATA_PORT -o $DADA_KEY &
+echo $CAPTURE_PATH -c 0 -f $CORRCONF -i $CONTROL_IP -j $DATA_IP -p $DATA_PORT -o $DADA_KEY -d &
 CAPTURE_PID=$!
+
+echo dada_dbdisk -D /hdd/datacasatta/rawpackets/ -k dada
 
 # Wait for the specified duration
 echo "Capturing data for $CAPTURE_DURATION seconds..."
