@@ -46,11 +46,11 @@
 
 // default UDP packet dims
 #define UDP_HEADER   16              // size of header/sequence number
-#define UDP_DATA     6160           // obs bytes per packet
-#define UDP_PAYLOAD  6144           // header + datasize
+#define UDP_DATA     6144           // obs bytes per packet
+#define UDP_PAYLOAD  6160           // header + datasize
 
 // number of channel groups to expect
-#define NCHANG 1
+#define NCHANG 6
 
 // number of SNAPs to expect
 #define NSNAPS 1

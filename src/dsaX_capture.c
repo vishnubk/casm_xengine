@@ -1058,6 +1058,7 @@ int main (int argc, char *argv[]) {
 		      udpdb.packets->received++;
 		      udpdb.bytes->received += UDP_DATA;
 		      udpdb.block_count++;
+		      syslog (LOG_INFO, "RECEIVED UDP_HEADERSIZE=%d", UDP_HEADER);
 		    }
 		      //		      syslog (LOG_INFO, "Received");
 		  
