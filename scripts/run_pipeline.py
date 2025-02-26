@@ -25,7 +25,7 @@ def run_pipeline(use_dada_dbdisk=False, use_correlator=True):
     # Function to clean up and exit
     def cleanup():
         print("Cleaning up...")
-        subprocess.run(["pkill", "-f", f"dada_db -k {DADA_KEY}"])
+        subprocess.run(["dada_db", "-k", {DADA_KEY}, "-d"])
         subprocess.run(["pkill", "-f", CORRELATOR_PATH])
         subprocess.run(["pkill", "-f", CAPTURE_PATH])
         exit()
