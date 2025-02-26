@@ -21,7 +21,6 @@
 #include <sys/socket.h>
 #include <syslog.h>
 
-
 #include "sock.h"
 #include "tmutil.h"
 #include "dada_client.h"
@@ -257,7 +256,8 @@ int main (int argc, char *argv[]) {
   
   syslog (LOG_INFO, "creating in and out hdus");
   
-  hdu_in  = dada_hdu_create ();
+  multilog_t* log = multilog_open("casm_merge", 0);
+  hdu_in = dada_hdu_create(log);
   dada_hdu_set_key (hdu_in, in_key);
   if (dada_hdu_connect (hdu_in) < 0) {
     syslog (LOG_ERR,"could not connect to dada buffer in");
@@ -268,7 +268,7 @@ int main (int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  hdu_out  = dada_hdu_create ();
+  hdu_out  = dada_hdu_create (log);
   dada_hdu_set_key (hdu_out, out_key);
   if (dada_hdu_connect (hdu_out) < 0) {
     syslog (LOG_ERR,"could not connect to output  buffer");
@@ -279,7 +279,7 @@ int main (int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  hdu_in2  = dada_hdu_create ();
+  hdu_in2  = dada_hdu_create (log);
   dada_hdu_set_key (hdu_in2, in_key2);
   if (dada_hdu_connect (hdu_in2) < 0) {
     syslog (LOG_ERR,"could not connect to input  buffer2");
