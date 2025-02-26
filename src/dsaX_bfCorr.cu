@@ -1450,27 +1450,23 @@ int main (int argc, char *argv[]) {
   
   // DADA stuff
   
+  // Create multilog
+  multilog_t* log = multilog_open("dsaX_bfCorr", 0);
+  multilog_add(log, stderr);
+
   syslog (LOG_INFO, "creating in and out hdus");
   
-  hdu_in  = dada_hdu_create ();
-  dada_hdu_set_key (hdu_in, in_key);
-  if (dada_hdu_connect (hdu_in) < 0) {
-    syslog (LOG_ERR,"could not connect to dada buffer in");
-    return EXIT_FAILURE;
-  }
-  if (dada_hdu_lock_read (hdu_in) < 0) {
-    syslog (LOG_ERR,"could not lock to dada buffer in");
+  hdu_in = dada_hdu_create(log);
+  dada_hdu_set_key(hdu_in, in_key);
+  if (dada_hdu_connect(hdu_in) < 0) {
+    syslog(LOG_ERR,"could not connect to dada buffer in");
     return EXIT_FAILURE;
   }
   
-  hdu_out  = dada_hdu_create ();
-  dada_hdu_set_key (hdu_out, out_key);
-  if (dada_hdu_connect (hdu_out) < 0) {
-    syslog (LOG_ERR,"could not connect to output  buffer");
-    return EXIT_FAILURE;
-  }
-  if (dada_hdu_lock_write(hdu_out) < 0) {
-    syslog (LOG_ERR, "could not lock to output buffer");
+  hdu_out = dada_hdu_create(log);
+  dada_hdu_set_key(hdu_out, out_key);
+  if (dada_hdu_connect(hdu_out) < 0) {
+    syslog(LOG_ERR,"could not connect to output buffer");
     return EXIT_FAILURE;
   }
 
