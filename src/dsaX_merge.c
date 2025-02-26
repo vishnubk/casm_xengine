@@ -31,8 +31,8 @@
 #include "ipcbuf.h"
 #include "dada_affinity.h"
 #include "ascii_header.h"
-#include "dsaX_capture.h"
-#include "dsaX_def.h"
+#include "casm_capture.h"
+#include "casm_def.h"
 
 /* global variables */
 int DEBUG = 0;
