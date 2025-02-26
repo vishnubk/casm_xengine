@@ -15,7 +15,7 @@ def run_pipeline(use_dada_dbdisk=False, use_correlator=True):
     CAPTURE_DURATION = config['CAPTURE_DURATION']
     OUTPUT_DIR = config['OUTPUT_DIR']
     DIR = config['DIR']
-    DUMPFIL_PATH = os.path.join(DIR, "dumpfil")
+    CORRELATOR_PATH = os.path.join(DIR, "casm_correlator")
     CAPTURE_PATH = os.path.join(DIR, "dsaX_capture")
     CONTROL_IP = config['CONTROL_IP']
     DATA_IP = config['DATA_IP']
@@ -45,7 +45,7 @@ def run_pipeline(use_dada_dbdisk=False, use_correlator=True):
     
     if use_correlator:
         print("Running casm_correlator.c...")
-        subprocess.run(["./casm_correlator.c", "-k", DADA_KEY, "-D", OUTPUT_DIR])
+        subprocess.run([CORRELATOR_PATH, "-k", DADA_KEY, "-D", OUTPUT_DIR])
 
     # Give dumpfil a moment to start up
     time.sleep(5)
