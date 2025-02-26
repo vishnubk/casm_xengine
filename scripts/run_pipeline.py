@@ -26,7 +26,7 @@ def run_pipeline(use_dada_dbdisk=False, use_correlator=True):
     def cleanup():
         print("Cleaning up...")
         subprocess.run(["pkill", "-f", f"dada_db -k {DADA_KEY}"])
-        subprocess.run(["pkill", "-f", DUMPFIL_PATH])
+        subprocess.run(["pkill", "-f", CORRELATOR_PATH])
         subprocess.run(["pkill", "-f", CAPTURE_PATH])
         exit()
 
@@ -44,7 +44,7 @@ def run_pipeline(use_dada_dbdisk=False, use_correlator=True):
         subprocess.run(["dada_dbdisk", "-k", DADA_KEY, "-D", OUTPUT_DIR])
     
     if use_correlator:
-        print("Running casm_correlator.c...")
+        print("Running casm_correlator...")
         subprocess.run([CORRELATOR_PATH, "-k", DADA_KEY, "-D", OUTPUT_DIR])
 
     # Give dumpfil a moment to start up
