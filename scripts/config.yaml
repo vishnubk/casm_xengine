@@ -1,0 +1,10 @@
+# config.yaml
+DADA_KEY: "dada"
+BUFFER_SIZE: 6160 * 77784
+NUM_BLOCKS: 8
+CAPTURE_DURATION: 10
+OUTPUT_DIR: "./"
+DIR: "/home/user/connor/code/casm_xengine/src/"
+CONTROL_IP: "127.0.0.1"
+DATA_IP: "192.168.1.3"
+DATA_PORT: 20000
