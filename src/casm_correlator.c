@@ -25,6 +25,7 @@
 #include <string.h>
 #include "dada_hdu.h"
 #include "ipcbuf.h"
+#include <unistd.h>  // Include for getopt
 
 #define NANTS 12                   // Number of antennas
 #define NCHAN 3072                  // Number of frequency channels (adjust as needed)
@@ -50,18 +51,29 @@ static inline void decode_sample(uint8_t sample, int *re, int *im) {
 }
 
 int main(int argc, char **argv) {
-    if (argc < 2) {
-        fprintf(stderr, "Usage: %s <DADA key in hex>\n", argv[0]);
+    key_t dada_key = 0;
+    int opt;
+
+    // Parse command-line options
+    while ((opt = getopt(argc, argv, "k:")) != -1) {
+        switch (opt) {
+            case 'k':
+                if (sscanf(optarg, "%x", &dada_key) != 1) {
+                    fprintf(stderr, "Error: Invalid DADA key.\n");
+                    return EXIT_FAILURE;
+                }
+                break;
+            default:
+                fprintf(stderr, "Usage: %s -k <DADA key in hex>\n", argv[0]);
+                return EXIT_FAILURE;
+        }
+    }
+
+    if (dada_key == 0) {
+        fprintf(stderr, "Usage: %s -k <DADA key in hex>\n", argv[0]);
         return EXIT_FAILURE;
     }
-    
-    /* Parse the DADA buffer key from the command line */
-    key_t dada_key;
-    if (sscanf(argv[1], "%x", &dada_key) != 1) {
-        fprintf(stderr, "Error: Invalid DADA key.\n");
-        return EXIT_FAILURE;
-    }
-    
+
     /* Create and connect to the DADA Header/Data Unit (HDU) for reading */
     dada_hdu_t *hdu = dada_hdu_create(NULL);
     dada_hdu_set_key(hdu, dada_key);
