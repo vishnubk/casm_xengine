@@ -39,7 +39,7 @@
 #define XGPU_IN_INC 1 // size of input increment
 #define NBASE 4656 // nant*(nant+1)/2
 #define NPOL 2
-#define NCHAN 1536 // regardless of NCHANG
+#define NCHAN 3072 // regardless of NCHANG
 
 // default port for packet capture
 #define CAPTURE_PORT 4011

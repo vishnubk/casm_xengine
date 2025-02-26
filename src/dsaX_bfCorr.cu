@@ -1444,8 +1444,6 @@ int main (int argc, char *argv[]) {
     fclose(fin);
     exit(1);
   }
-  
-
 
   
   // DADA stuff
