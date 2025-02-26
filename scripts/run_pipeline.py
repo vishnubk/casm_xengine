@@ -45,7 +45,7 @@ def run_pipeline(use_dada_dbdisk=False, use_correlator=True):
     
     if use_correlator:
         print("Running casm_correlator...")
-        subprocess.run(["echo", CORRELATOR_PATH, "-k", DADA_KEY, "-D", OUTPUT_DIR])
+        subprocess.run(["echo", CORRELATOR_PATH, "-k", DADA_KEY])
 
     # Give dumpfil a moment to start up
     time.sleep(5)
