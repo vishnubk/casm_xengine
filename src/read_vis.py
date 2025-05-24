@@ -34,7 +34,7 @@ def read_visibilities(filename, nchan=128, nants=12):
 if __name__ == "__main__":
     filename = "visibilities.bin"
     try:
-        vis = read_visibilities(filename)
+        vis = read_visibilities(filename, nchan=3072)
         print("Visibilities shape:", vis.shape)
         # For example, display the first integration period for channel 0:
         print("Integration period 0, channel 0 visibility matrix:")
