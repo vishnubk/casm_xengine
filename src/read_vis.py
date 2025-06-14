@@ -1,4 +1,7 @@
+import sys
+
 import numpy as np
+import matplotlib.pylab as plt
 
 def read_visibilities(filename, nchan=128, nants=12):
     """
@@ -32,7 +35,7 @@ def read_visibilities(filename, nchan=128, nants=12):
     return visibilities
 
 if __name__ == "__main__":
-    filename = "visibilities.bin"
+    filename = "/hdd/datacasm/visibilities.bin"
     try:
         vis = read_visibilities(filename, nchan=3072)
         print("Visibilities shape:", vis.shape)
@@ -41,3 +44,18 @@ if __name__ == "__main__":
         print(vis[0, 0])
     except Exception as e:
         print("Error reading file:", e)
+
+    mm = int(sys.argv[1])
+        
+    plt.figure()
+    plt.imshow(np.abs(vis.mean(0).mean(0)))
+    plt.colorbar()
+
+#    plt.figure()
+#    plt.imshow(np.abs(vis[:, :, mm, mm]), aspect='auto')
+#    plt.colorbar()
+#    plt.xlabel('Time')
+#    plt.ylabel('Freq')
+    
+    plt.show()
+        

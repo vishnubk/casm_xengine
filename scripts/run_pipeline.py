@@ -16,7 +16,7 @@ def run_pipeline(use_dada_dbdisk=False, use_correlator=True):
     OUTPUT_DIR = config['OUTPUT_DIR']
     DIR = config['DIR']
     CORRELATOR_PATH = os.path.join(DIR, "casm_correlator")
-    CAPTURE_PATH = os.path.join(DIR, "dsaX_capture")
+    CAPTURE_PATH = os.path.join(DIR, "casm_capture")
     CONTROL_IP = config['CONTROL_IP']
     DATA_IP = config['DATA_IP']
     DATA_PORT = config['DATA_PORT']
@@ -45,14 +45,15 @@ def run_pipeline(use_dada_dbdisk=False, use_correlator=True):
     
     if use_correlator:
         print("Running casm_correlator...")
-        subprocess.run(["echo", CORRELATOR_PATH, "-k", DADA_KEY])
+        subprocess.run(["sudo", CORRELATOR_PATH, "-k", DADA_KEY])
 
     # Give dumpfil a moment to start up
     time.sleep(5)
 
     # Start packet capture
     print("Starting packet capture...")
-    capture_process = subprocess.Popen([CAPTURE_PATH, "-c", "0", "-f", CORRCONF, "-i", CONTROL_IP, "-j", DATA_IP, "-p", str(DATA_PORT), "-o", DADA_KEY, "-d"])
+#    capture_process = subprocess.Popen([CAPTURE_PATH, "-c", "0", "-f", CORRCONF, "-i", CONTROL_IP, "-j", DATA_IP, "-p", str(DATA_PORT), "-o", DADA_KEY, "-d"])
+    os.system('sudo ../src/casm_capture -c 1 -f ../src/correlator_header_dsaX.txt -j 192.168.0.1 -i 127.0.0.1 -p 10000 -q 1000 -o dada')
 
     # Wait for the specified duration
     print(f"Capturing data for {CAPTURE_DURATION} seconds...")
