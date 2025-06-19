@@ -3,7 +3,16 @@ import subprocess
 import time
 import yaml
 
-def run_pipeline(use_dada_dbdisk=False, use_correlator=True):
+import snap_setup
+
+def run_pipeline(start_snap=True, 
+                 use_dada_dbdisk=False, 
+                 use_correlator=True):
+    """ This is a preliminary function for running the 
+    test pipeline. It can program the SNAP and start sending packets,
+    create a DADA buffer, capture packets and place them in that 
+    DADA buffer, and then run the real-time correlator. 
+    """
     # Load configuration from YAML file
     with open('config.yaml', 'r') as file:
         config = yaml.safe_load(file)
@@ -19,6 +28,10 @@ def run_pipeline(use_dada_dbdisk=False, use_correlator=True):
     CAPTURE_PATH = os.path.join(DIR, "casm_capture")
     CONTROL_IP = config['CONTROL_IP']
     DATA_IP = config['DATA_IP']
+    SNAP_IP = config['SNAP_IP']
+    SNAP_FPG = config['SNAP_FPG']
+    NIC_MAC = config['NIC_MAC']
+    NCHAN_PER_PACKET = config['NCHAN_PER_PACKET']
     DATA_PORT = config['DATA_PORT']
     CORRCONF = os.path.join(DIR, "correlator_header_dsaX.txt")
 
@@ -33,6 +46,14 @@ def run_pipeline(use_dada_dbdisk=False, use_correlator=True):
     # Set up trap to call cleanup function on script exit
     import atexit
     atexit.register(cleanup)
+
+    if start_snap:
+        snap_setup.setup_snap(SNAP_IP,
+                   fn=SNAP_FPG,
+                   DATA_IP=DATA_IP,
+                   NIC_MAC=NIC_MAC,
+                   set_zeros=False,
+                   NCHAN_PER_PACKET=NCHAN_PER_PACKET)
 
     # Create DADA buffer
     print("Creating DADA buffer...")
@@ -52,8 +73,8 @@ def run_pipeline(use_dada_dbdisk=False, use_correlator=True):
 
     # Start packet capture
     print("Starting packet capture...")
-#    capture_process = subprocess.Popen([CAPTURE_PATH, "-c", "0", "-f", CORRCONF, "-i", CONTROL_IP, "-j", DATA_IP, "-p", str(DATA_PORT), "-o", DADA_KEY, "-d"])
-    os.system('sudo ../src/casm_capture -c 1 -f ../src/correlator_header_dsaX.txt -j 192.168.0.1 -i 127.0.0.1 -p 10000 -q 1000 -o dada')
+    capture_process = subprocess.Popen([CAPTURE_PATH, "-c", "0", "-f", CORRCONF, "-i", CONTROL_IP, "-j", DATA_IP, "-p", str(DATA_PORT), "-o", DADA_KEY, "-d"])
+#    os.system('sudo ../src/casm_capture -c 1 -f ../src/correlator_header_dsaX.txt -j 192.168.0.1 -i 127.0.0.1 -p 10000 -q 1000 -o dada')
 
     # Wait for the specified duration
     print(f"Capturing data for {CAPTURE_DURATION} seconds...")

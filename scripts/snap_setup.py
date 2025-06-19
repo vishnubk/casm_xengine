@@ -6,7 +6,11 @@ from casm_f import snap_fengine
 
 def setup_snap(IP,
                fn='/home/user/connor/code/casm_snap_f/firmware/snap_f_12i_4kc/outputs/snap_f_12i_4kc_2025-05-08_1446.fpg',
-               set_zeros=False):
+               DATA_IP='192.168.0.1'
+               NIC_MAC=0x80615f0c7116,
+               NCHAN_PER_PACKET=512):
+    """ Here
+    """
     f = CasperFpga(IP, transport=TapcpTransport)
     print('Starting initial upload and programming')
     f.upload_to_ram_and_program(fn)
@@ -18,18 +22,24 @@ def setup_snap(IP,
     MAC=int(mac.replace(":",""),16)
 
     # It is critical that the destination mac is correct!
-    macs = {IP:MAC,'192.168.0.1':0x80615f0c7116}
-    dests = [{'ip' : '192.168.0.1', 'port':10000, 'start_chan': 0, 'nchan' : 3072}]
+    macs = {IP:MAC, DATA_IP:NIC_MAC}
+    dests = [{'ip' : DATA_IP, 
+              'port':10000, 
+              'start_chan': 0, 
+              'nchan' : 3072}]
 
-    # Connecting to snap with casm_f
+    # Connecting to snap with casm_f. Use the microblaze rather than the 
+    # raspberry Pi connection.
     snap = snap_fengine.SnapFengine(IP, use_microblaze=True)
     snap.program(fn)
-    if set_zeros:
-        print("Important: setting adcs to zero!")
-        snap.input.use_zero()
         
     print('Now configuring SNAP, starting to send packets.')
-    snap.configure(source_ip=IP, source_port=20000, program=False,  dests=dests, macs=macs, nchan_packet=512, enable_tx=True)
+    snap.configure(source_ip=IP, source_port=20000, 
+                   program=False,  
+                   dests=dests, 
+                   macs=macs, 
+                   nchan_packet=NCHAN_PER_PACKET, 
+                   enable_tx=True)
     
 
 def main():
