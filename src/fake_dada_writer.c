@@ -38,11 +38,14 @@ int main() {
   fprintf(stderr, "Block size: %lu bytes\n", block_size);
 
   fprintf(stderr, "Opening block for write...\n");
-  char* block = ipcio_open_block_write(hdu->data_block, NULL);
-  if (!block) {
-    fprintf(stderr, "Failed to open block for writing\n");
-    return 1;
-  }
+  uint64_t block_id;
+  char* block = ipcio_open_block_write(hdu->data_block, &block_id);
+  fprintf(stderr, "Opened block ID: %lu\n", block_id);
+
+if (!block) {
+  fprintf(stderr, "ipcio_open_block_write returned NULL\n");
+  return 1;
+}
 
   fprintf(stderr, "Zeroing buffer and closing write block...\n");
   memset(block, 0, block_size);
