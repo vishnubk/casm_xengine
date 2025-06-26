@@ -11,3 +11,4 @@ DATA_PORT: 10000
 SNAP_IP: "192.168.0.54"
 SNAP_FPG: "/home/user/connor/code/casm_snap_f/firmware/snap_f_12i_4kc/outputs/snap_f_12i_4kc_2025-05-08_1446.fpg"
 NIC_MAC: 0x80615f0c7116
+NCHAN_PER_PACKET: 512

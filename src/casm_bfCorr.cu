@@ -31,7 +31,7 @@ using std::endl;
 #include "ipcbuf.h"
 #include "dada_affinity.h"
 #include "ascii_header.h"
-#include "dsaX_def.h"
+#include "casm_def.h"
 
 #include <cuda.h>
 #include "cuda_fp16.h"
@@ -491,8 +491,6 @@ void reorder_output(dmem * d) {
   //cudaStreamDestroy(stream);  
 
 }
-
-
 
 // correlator function
 // workflow: copy to device, reorder, stridedBatchedGemm, reorder
@@ -1387,7 +1385,7 @@ int main (int argc, char *argv[]) {
     fclose(ff);
 
     for (iii=0;iii<(NCHAN_PER_PACKET/8);iii++)
-      d.h_freqs[iii] = 1e6*(sfreq-iii*250./1024.);
+      d.h_freqs[iii] = 1e6f*(sfreq - iii*BW_MHZ/1024.f);
     cudaMemcpy(d.d_freqs,d.h_freqs,sizeof(float)*(NCHAN_PER_PACKET/8),cudaMemcpyHostToDevice);
 
     // calculate weights

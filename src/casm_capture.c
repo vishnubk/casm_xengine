@@ -383,8 +383,6 @@ int udpdb_stop_function (udpdb_t* ctx)
 }
 
 
-
-
 /* --------- THREADS -------- */
 
 // STATS THREAD
