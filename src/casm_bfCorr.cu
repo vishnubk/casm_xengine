@@ -1168,8 +1168,14 @@ void calc_weights(dmem * d) {
 
 int main (int argc, char *argv[]) {  
 
+  fprintf(stderr, "DEBUG: Program entered main().\n");
+  fflush(stderr); // Force it to print NOW
+
   cudaSetDevice(1);
   
+  fprintf(stderr, "DEBUG: cudaSetDevice(1) completed.\n");
+  fflush(stderr);
+
   // startup syslog message
   // using LOG_LOCAL0
   openlog ("casm_bfCorr", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL0);
@@ -1178,6 +1184,9 @@ int main (int argc, char *argv[]) {
   /* DADA Header plus Data Unit */
   dada_hdu_t* hdu_in = 0;
   dada_hdu_t* hdu_out = 0;
+
+  fprintf(stderr, "DEBUG: HDU pointers initialized.\n");
+  fflush(stderr);
 
   // data block HDU keys
   key_t in_key = REORDER_BLOCK_KEY;
