@@ -1487,7 +1487,7 @@ int main (int argc, char *argv[]) {
   
   syslog (LOG_INFO, "creating in and out hdus");
   
-  multilog_t* log = multi_log_open("casm_bfCorr", LOG_INFO);
+  multilog_t* log = multilog_open("casm_bfCorr", LOG_INFO);
   hdu_in  = dada_hdu_create (log);
   dada_hdu_set_key (hdu_in, in_key);
   if (dada_hdu_connect (hdu_in) < 0) {
