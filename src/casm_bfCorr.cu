@@ -47,6 +47,7 @@ using std::endl;
 // beam sep
 #define sep 500.0  // arcmin 
 #define sep_ns 140.0 // arcmin
+#define BW_MHZ 93.75 // 
 
 /* global variables */
 int DEBUG = 0;
