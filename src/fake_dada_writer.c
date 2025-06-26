@@ -22,7 +22,7 @@ int main() {
     return 1;
   }
 
-  uint64_t block_size = ipcbuf_get_bufsz(hdu->data_block->buf);
+  uint64_t block_size = ipcbuf_get_bufsz(&hdu->data_block->buf);
   char* block = ipcio_open_block_write(hdu->data_block, NULL);
   if (!block) {
     fprintf(stderr, "Failed to open write block\n");
