@@ -231,10 +231,10 @@ void deallocate(dmem * d, int bf) {
   
 }
 
-void dsaX_dbgpu_cleanup (dada_hdu_t * in, dada_hdu_t * out);
+void casm_dbgpu_cleanup (dada_hdu_t * in, dada_hdu_t * out);
 int dada_bind_thread_to_core (int core);
 
-void dsaX_dbgpu_cleanup (dada_hdu_t * in, dada_hdu_t * out)
+void casm_dbgpu_cleanup (dada_hdu_t * in, dada_hdu_t * out)
 {
 
   if (dada_hdu_unlock_read (in) < 0)
@@ -255,7 +255,7 @@ void dsaX_dbgpu_cleanup (dada_hdu_t * in, dada_hdu_t * out)
 void usage()
 {
 fprintf (stdout,
-	 "dsaX_bfCorr [options]\n"
+	 "casm_bfCorr [options]\n"
 	 " -c core   bind process to CPU core [no default]\n"
 	 " -d send debug messages to syslog\n"
 	 " -i in_key [default REORDER_BLOCK_KEY]\n"
@@ -1172,7 +1172,7 @@ int main (int argc, char *argv[]) {
   
   // startup syslog message
   // using LOG_LOCAL0
-  openlog ("dsaX_bfCorr", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL0);
+  openlog ("casm_bfCorr", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL0);
   syslog (LOG_NOTICE, "Program started by User %d", getuid ());
   
   /* DADA Header plus Data Unit */
@@ -1518,13 +1518,13 @@ int main (int argc, char *argv[]) {
   if (!header_in)
     {
       syslog(LOG_ERR, "could not read next header");
-      dsaX_dbgpu_cleanup (hdu_in, hdu_out);
+      casm_dbgpu_cleanup (hdu_in, hdu_out);
       return EXIT_FAILURE;
     }
   if (ipcbuf_mark_cleared (hdu_in->header_block) < 0)
     {
       syslog (LOG_ERR, "could not mark header block cleared");
-      dsaX_dbgpu_cleanup (hdu_in, hdu_out);
+      casm_dbgpu_cleanup (hdu_in, hdu_out);
       return EXIT_FAILURE;
     }
   
@@ -1532,14 +1532,14 @@ int main (int argc, char *argv[]) {
   if (!header_out)
     {
       syslog(LOG_ERR, "could not get next header block [output]");
-      dsaX_dbgpu_cleanup (hdu_in, hdu_out);
+      casm_dbgpu_cleanup (hdu_in, hdu_out);
       return EXIT_FAILURE;
     }
   memcpy (header_out, header_in, header_size);
   if (ipcbuf_mark_filled (hdu_out->header_block, header_size) < 0)
     {
       syslog (LOG_ERR, "could not mark header block filled [output]");
-      dsaX_dbgpu_cleanup (hdu_in, hdu_out);
+      casm_dbgpu_cleanup (hdu_in, hdu_out);
       return EXIT_FAILURE;
     }
 
@@ -1627,7 +1627,7 @@ int main (int argc, char *argv[]) {
     if (written < block_out)
       {
 	syslog(LOG_ERR, "main: failed to write all data to datablock [output]");
-	dsaX_dbgpu_cleanup (hdu_in, hdu_out);
+	casm_dbgpu_cleanup (hdu_in, hdu_out);
 	return EXIT_FAILURE;
       }
     
@@ -1647,7 +1647,7 @@ int main (int argc, char *argv[]) {
   // finish up
   free(output_buffer);
   deallocate(&d,bf);
-  dsaX_dbgpu_cleanup (hdu_in, hdu_out);
+  casm_dbgpu_cleanup (hdu_in, hdu_out);
   multilog_close(log);
 }
 
