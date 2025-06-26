@@ -682,8 +682,14 @@ __global__ void power_sum_and_transpose_output(half * dra, half * drb, half * di
     
     // do power sum
     for (int k=0;k<4;k++) {
-      tile[threadIdx.y+j][threadIdx.x] += dra[4*iidx+k]*dra[4*iidx+k] + dia[4*iidx+k]*dia[4*iidx+k] + drb[4*iidx+k]*drb[4*iidx+k] + dib[4*iidx+k]*dib[4*iidx+k];
+      float drav = __half2float(dra[4*iidx+k]);
+      float diav = __half2float(dia[4*iidx+k]);
+      float drbv = __half2float(drb[4*iidx+k]);
+      float dibv = __half2float(dib[4*iidx+k]);
+      tile[threadIdx.y+j][threadIdx.x] += drav*drav + diav*diav + drbv*drbv + dibv*dibv;
+      //tile[threadIdx.y+j][threadIdx.x] += dra[4*iidx+k]*dra[4*iidx+k] + dia[4*iidx+k]*dia[4*iidx+k] + drb[4*iidx+k]*drb[4*iidx+k] + dib[4*iidx+k]*dib[4*iidx+k];
       if (subtract_ib)
+
 	tile[threadIdx.y+j][threadIdx.x] -= ibsum[4*idx+k];
     }
       
