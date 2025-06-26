@@ -1,5 +1,6 @@
 #include "dada_hdu.h"
 #include "ipcio.h"
+#include <string.h>
 
 int main() {
   dada_hdu_t* hdu = dada_hdu_create(0);
