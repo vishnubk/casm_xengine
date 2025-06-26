@@ -28,7 +28,7 @@ int main() {
   }
 
   fprintf(stderr, "Getting block size...\n");
-  ipcbuf_t* buf = hdu->data_block->buf;
+  ipcbuf_t* buf = &hdu->data_block->buf;
   if (!buf) {
     fprintf(stderr, "data_block->buf is NULL\n");
     return 1;
