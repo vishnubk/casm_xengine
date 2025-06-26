@@ -1487,7 +1487,8 @@ int main (int argc, char *argv[]) {
   
   syslog (LOG_INFO, "creating in and out hdus");
   
-  hdu_in  = dada_hdu_create ();
+  multi_log_t* log = multi_log_open("casm_bfCorr", LOG_INFO);
+  hdu_in  = dada_hdu_create (log);
   dada_hdu_set_key (hdu_in, in_key);
   if (dada_hdu_connect (hdu_in) < 0) {
     syslog (LOG_ERR,"could not connect to dada buffer in");
@@ -1498,7 +1499,7 @@ int main (int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
   
-  hdu_out  = dada_hdu_create ();
+  hdu_out = dada_hdu_create (log);  
   dada_hdu_set_key (hdu_out, out_key);
   if (dada_hdu_connect (hdu_out) < 0) {
     syslog (LOG_ERR,"could not connect to output  buffer");
@@ -1646,7 +1647,7 @@ int main (int argc, char *argv[]) {
   free(output_buffer);
   deallocate(&d,bf);
   dsaX_dbgpu_cleanup (hdu_in, hdu_out);
-  
+  multi_log_close(log);
 }
 
 
