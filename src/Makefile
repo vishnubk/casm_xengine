@@ -1,7 +1,7 @@
 # Makefile for casm_bfCorr.cu
 
 # Compiler and flags
-NVCC := /usr/local/cuda/bin/nvcc
+NVCC := /usr/bin/nvcc
 CFLAGS := -O3 -std=c++14 -arch=sm_75 -Xcompiler="-pthread"
 
 # Include and library paths (customize if needed)
