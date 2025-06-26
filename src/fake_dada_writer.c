@@ -9,7 +9,8 @@ int main() {
   dada_hdu_lock_write(hdu);
 
   char* block = ipcio_open_block_write(hdu->data_block, NULL);
-  memset(block, 0, BLOCK_SIZE);  // Fill with zeros or synthetic data
+  uint64_t block_size = ipcbuf_get_bufsz(hdu->data_block);
+  memset(block, 0, block_size);
   ipcio_close_block_write(hdu->data_block, BLOCK_SIZE);
 
   dada_hdu_unlock_write(hdu);
