@@ -1,26 +1,26 @@
-# Compiler
-CC = gcc
+# Makefile for casm_bfCorr.cu
 
-# Compiler flags
-CFLAGS = -g -Wall -O2
+# Compiler and flags
+NVCC := /usr/local/cuda/bin/nvcc
+CFLAGS := -O3 -std=c++14 -arch=sm_75 -Xcompiler="-pthread"
 
-# PSRDADA library flags
-PSRDADA_INCLUDE = -I/usr/local/include
-PSRDADA_LIB = -L/usr/local/lib -lpsrdada
+# Include and library paths (customize if needed)
+INCLUDES := -I/usr/local/cuda/include
+LIBPATHS := -L/usr/local/cuda/lib64 -L/usr/local/lib
 
-# Other libraries
-LIBS = -lm -lpthread
+# Libraries
+LIBS := -lcufft -lcublas -lpsrdada
 
-# Targets
-all: dsaX_capture dumpfil
+# Target and sources
+TARGET := casm_bfCorr
+SRC := casm_bfCorr.cu
 
-dsaX_capture: dsaX_capture.c
-	$(CC) $(CFLAGS) $(PSRDADA_INCLUDE) -o $@ $< $(PSRDADA_LIB) $(LIBS)
+# Default rule
+all: $(TARGET)
 
-dumpfil: dumpfil.c
-	$(CC) $(CFLAGS) $(PSRDADA_INCLUDE) -o $@ $< $(PSRDADA_LIB) $(LIBS)
+$(TARGET): $(SRC)
+	$(NVCC) -o $@ $^ $(CFLAGS) $(INCLUDES) $(LIBPATHS) $(LIBS)
 
+# Clean rule
 clean:
-	rm -f dsaX_capture dumpfil *.o
-
-.PHONY: all clean
+	rm -f $(TARGET)
