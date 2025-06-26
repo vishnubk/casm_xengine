@@ -11,7 +11,7 @@ int main() {
   char* block = ipcio_open_block_write(hdu->data_block, NULL);
   uint64_t block_size = ipcbuf_get_bufsz(hdu->data_block);
   memset(block, 0, block_size);
-  ipcio_close_block_write(hdu->data_block, BLOCK_SIZE);
+  ipcio_close_block_write(hdu->data_block, block_size);
 
   dada_hdu_unlock_write(hdu);
   dada_hdu_disconnect(hdu);
