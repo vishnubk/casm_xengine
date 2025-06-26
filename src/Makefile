@@ -2,7 +2,7 @@
 
 # Compiler and flags
 NVCC := /usr/bin/nvcc
-CFLAGS := -O3 -std=c++14 -arch=sm_75 -Xcompiler="-pthread"
+CFLAGS := -g -O3 -std=c++14 -arch=sm_75 -Xcompiler="-pthread"
 
 # Include and library paths (customize if needed)
 INCLUDES := -I/usr/local/cuda/include
