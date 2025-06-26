@@ -15,14 +15,13 @@ return 1;
   dada_hdu_connect(hdu);
   dada_hdu_lock_write(hdu);
 
-  uint64_t block_size = ipcbuf_get_bufsz(hdu->data_block);
+  uint64_t block_size = ipcbuf_get_bufsz(hdu->data_block->buf);
   char* block = ipcio_open_block_write(hdu->data_block, NULL);
 
-char* block = ipcio_open_block_write(hdu->data_block, NULL);
-if (!block) {
-  fprintf(stderr, "Failed to get write block\n");
-  return 1;
-}
+  if (!block) {
+    fprintf(stderr, "Failed to get write block\n");
+  return 1;  
+  }
 
   memset(block, 0, block_size);  // Fill with zeros or synthetic data
   ipcio_close_block_write(hdu->data_block, block_size);
