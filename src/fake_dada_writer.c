@@ -1,6 +1,7 @@
+#include <stdio.h>
+#include <string.h>
 #include "dada_hdu.h"
 #include "ipcio.h"
-#include <string.h>
 
 int main() {
   dada_hdu_t* hdu = dada_hdu_create(0);
@@ -8,9 +9,9 @@ int main() {
   dada_hdu_connect(hdu);
   dada_hdu_lock_write(hdu);
 
-  char* block = ipcio_open_block_write(hdu->data_block, NULL);
   uint64_t block_size = ipcbuf_get_bufsz(hdu->data_block);
-  memset(block, 0, block_size);
+  char* block = ipcio_open_block_write(hdu->data_block, NULL);
+  memset(block, 0, block_size);  // Fill with zeros or synthetic data
   ipcio_close_block_write(hdu->data_block, block_size);
 
   dada_hdu_unlock_write(hdu);
