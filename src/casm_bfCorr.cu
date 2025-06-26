@@ -1475,7 +1475,6 @@ int main (int argc, char *argv[]) {
     // free
     free(d.h_input);
     free(output_data);
-    free(o1);
     deallocate(&d,bf);
     fclose(fin);
     exit(1);
