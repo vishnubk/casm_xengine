@@ -510,6 +510,15 @@ void dcorrelator(dmem * d) {
   end = clock();
   d->cp += (float)(end - begin) / CLOCKS_PER_SEC;
 
+  // reorder input
+  begin = clock();
+  reorder_input(d->d_input,d->d_tx,d->d_r,d->d_i);
+  
+  // not sure if essential
+  cudaDeviceSynchronize();
+  end = clock();
+  d->prep += (float)(end - begin) / CLOCKS_PER_SEC;
+
     // >>>>>>>>>> TEMPORARILY COMMENT OUT THIS BLOCK <<<<<<<<<<
     
     // begin = clock();
