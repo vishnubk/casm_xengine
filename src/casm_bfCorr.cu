@@ -631,19 +631,19 @@ void dcorrelator(dmem * d) {
 			    batchCount);
 
   // shown to be essential
-  cudaDeviceSynchronize();
-  end = clock();
-  d->cubl += (float)(end - begin) / CLOCKS_PER_SEC;
+  // cudaDeviceSynchronize();
+  // end = clock();
+  // d->cubl += (float)(end - begin) / CLOCKS_PER_SEC;
 
-  // destroy stream
-  cudaStreamDestroy(stream);
-  cublasDestroy(cublasH);
+  // // destroy stream
+  // cudaStreamDestroy(stream);
+  // cublasDestroy(cublasH);
   
-  // reorder output data
-  begin = clock();
-  reorder_output(d);
-  end = clock();
-  d->outp += (float)(end - begin) / CLOCKS_PER_SEC;
+  // // reorder output data
+  // begin = clock();
+  // reorder_output(d);
+  // end = clock();
+  // d->outp += (float)(end - begin) / CLOCKS_PER_SEC;
   
 }
 
