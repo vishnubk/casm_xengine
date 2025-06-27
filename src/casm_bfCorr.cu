@@ -420,24 +420,43 @@ __global__ void corr_output_copy(half *outr, half *outi, float *output, int *ind
   output[2*idx+1] = v2;
   
 }
+
 void reorder_output(dmem * d) {
+
+  cudaError_t err; // Variable to hold error codes
 
   // transpose input data
   dim3 dimBlock(32, 8), dimGrid((NANTS*NANTS)/32,(NCHAN_PER_PACKET*2*2*halfFac)/32);
 
   fprintf(stderr, "DEBUG: Launching first transpose_matrix_float...\n");
   transpose_matrix_float<<<dimGrid,dimBlock>>>(d->d_outr,d->d_tx_outr);
-  // Wait for the kernel to finish and check for errors
-  checkCuda(cudaDeviceSynchronize());
-  checkCuda(cudaGetLastError());
+
+  // Wait for the kernel to finish. This makes any error "sticky".
+  cudaDeviceSynchronize();
+  
+  // Get the last error that occurred and RESET the error state.
+  err = cudaGetLastError(); 
+  if (err != cudaSuccess) {
+      fprintf(stderr, "\n--- BUG FOUND! ---\n");
+      fprintf(stderr, "FATAL ERROR after first transpose kernel launch.\n");
+      fprintf(stderr, "Error: %s\n", cudaGetErrorString(err));
+      fprintf(stderr, "The bug is in the 'transpose_matrix_float' kernel or its launch configuration.\n");
+      exit(EXIT_FAILURE);
+  }
   fprintf(stderr, "DEBUG: First transpose completed successfully.\n");
 
 
   fprintf(stderr, "DEBUG: Launching second transpose_matrix_float...\n");
   transpose_matrix_float<<<dimGrid,dimBlock>>>(d->d_outi,d->d_tx_outi);
-  // Wait for the kernel to finish and check for errors
-  checkCuda(cudaDeviceSynchronize());
-  checkCuda(cudaGetLastError());
+  
+  cudaDeviceSynchronize();
+  err = cudaGetLastError();
+  if (err != cudaSuccess) {
+      fprintf(stderr, "\n--- BUG FOUND! ---\n");
+      fprintf(stderr, "FATAL ERROR after second transpose kernel launch.\n");
+      fprintf(stderr, "Error: %s\n", cudaGetErrorString(err));
+      exit(EXIT_FAILURE);
+  }
   fprintf(stderr, "DEBUG: Second transpose completed successfully.\n");
 
 
@@ -446,6 +465,7 @@ void reorder_output(dmem * d) {
   // ...
   free(h_idxs);
 }
+
 // function to copy d_outr and d_outi to d_output
 // inputs are [NCHAN_PER_PACKET, 2 time, 2 pol, NANTS, NANTS]
 // the corr matrices are column major order
