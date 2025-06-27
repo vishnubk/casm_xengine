@@ -49,6 +49,13 @@ using std::endl;
 #define sep_ns 140.0 // arcmin
 #define BW_MHZ 93.75 // 
 
+#define checkCuda(err) { \
+  if (err != cudaSuccess) { \
+    fprintf(stderr, "CUDA Error in %s at line %d: %s\n", __FILE__, __LINE__, cudaGetErrorString(err)); \
+    exit(EXIT_FAILURE); \
+  } \
+}
+
 /* global variables */
 int DEBUG = 0;
 
@@ -413,39 +420,32 @@ __global__ void corr_output_copy(half *outr, half *outi, float *output, int *ind
   output[2*idx+1] = v2;
   
 }
-
 void reorder_output(dmem * d) {
 
-  // >>>>>>>> THESE ARE NOW ACTIVE <<<<<<<<
   // transpose input data
   dim3 dimBlock(32, 8), dimGrid((NANTS*NANTS)/32,(NCHAN_PER_PACKET*2*2*halfFac)/32);
+
+  fprintf(stderr, "DEBUG: Launching first transpose_matrix_float...\n");
   transpose_matrix_float<<<dimGrid,dimBlock>>>(d->d_outr,d->d_tx_outr);
+  // Wait for the kernel to finish and check for errors
+  checkCuda(cudaDeviceSynchronize());
+  checkCuda(cudaGetLastError());
+  fprintf(stderr, "DEBUG: First transpose completed successfully.\n");
+
+
+  fprintf(stderr, "DEBUG: Launching second transpose_matrix_float...\n");
   transpose_matrix_float<<<dimGrid,dimBlock>>>(d->d_outi,d->d_tx_outi);
+  // Wait for the kernel to finish and check for errors
+  checkCuda(cudaDeviceSynchronize());
+  checkCuda(cudaGetLastError());
+  fprintf(stderr, "DEBUG: Second transpose completed successfully.\n");
 
-  // ... (code for allocating h_idxs and d_idxs is fine to leave active) ...
+
+  // ... (rest of the function) ...
   int * h_idxs = (int *)malloc(sizeof(int)*NBASE);
-  int * d_idxs;
-  cudaMalloc((void **)(&d_idxs), sizeof(int)*NBASE);
-  // ... (population of h_idxs and cudaMemcpy is fine) ...
-  int ii = 0;
-  for (int i=0;i<NANTS;i++) {
-    for (int j=0;j<=i;j++) {
-      h_idxs[ii] = i*NANTS + j;
-      ii++;
-    }
-  }
-  cudaMemcpy(d_idxs,h_idxs,sizeof(int)*NBASE,cudaMemcpyHostToDevice);
-
-  // >>>>>>>> TEMPORARILY COMMENT THIS OUT <<<<<<<<
-  /*
-  // run kernel to finish things
-  corr_output_copy<<<NCHAN_PER_PACKET*2*NBASE/128,128>>>(d->d_tx_outr,d->d_tx_outi,d->d_output,d_idxs);
-  */
-  
-  cudaFree(d_idxs);
+  // ...
   free(h_idxs);
 }
-
 // function to copy d_outr and d_outi to d_output
 // inputs are [NCHAN_PER_PACKET, 2 time, 2 pol, NANTS, NANTS]
 // the corr matrices are column major order
