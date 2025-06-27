@@ -501,20 +501,18 @@ void dcorrelator(dmem * d) {
     
     // copy to device  
     //memcpy(d->h_pinned_input,d->h_input,NPACKETS_PER_BLOCK*NANTS*NCHAN_PER_PACKET*2*2);
-    begin = clock();
     cudaMemcpy(d->d_input,d->h_input,NPACKETS_PER_BLOCK*NANTS*NCHAN_PER_PACKET*2*2,cudaMemcpyHostToDevice);
-    end = clock();
     d->cp += (float)(end - begin) / CLOCKS_PER_SEC;
 
     // >>>>>>>>>> TEMPORARILY COMMENT OUT THIS BLOCK <<<<<<<<<<
     
-    begin = clock();
-    reorder_input(d->d_input,d->d_tx,d->d_r,d->d_i);
+    // begin = clock();
+    // reorder_input(d->d_input,d->d_tx,d->d_r,d->d_i);
     
-    // not sure if essential
-    cudaDeviceSynchronize();
-    end = clock();
-    d->prep += (float)(end - begin) / CLOCKS_PER_SEC;
+    // // not sure if essential
+    // cudaDeviceSynchronize();
+    // end = clock();
+    // d->prep += (float)(end - begin) / CLOCKS_PER_SEC;
 
     // ...
     // Leave the entire cublasHgemmStridedBatched block untouched.
