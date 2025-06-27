@@ -499,7 +499,7 @@ void dcorrelator(dmem * d) {
     // ...
 
     // >>>>>>>>>> TEMPORARILY COMMENT OUT THIS BLOCK <<<<<<<<<<
-    /*
+    
     begin = clock();
     reorder_input(d->d_input,d->d_tx,d->d_r,d->d_i);
     
@@ -507,7 +507,7 @@ void dcorrelator(dmem * d) {
     cudaDeviceSynchronize();
     end = clock();
     d->prep += (float)(end - begin) / CLOCKS_PER_SEC;
-    */
+    
     // >>>>>>>>>> END OF BLOCK TO COMMENT OUT <<<<<<<<<<
 
 
