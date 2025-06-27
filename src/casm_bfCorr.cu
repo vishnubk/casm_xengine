@@ -414,13 +414,44 @@ __global__ void corr_output_copy(half *outr, half *outi, float *output, int *ind
   
 }
 
+void reorder_output(dmem * d) {
+
+  // >>>>>>>> THESE ARE NOW ACTIVE <<<<<<<<
+  // transpose input data
+  dim3 dimBlock(32, 8), dimGrid((NANTS*NANTS)/32,(NCHAN_PER_PACKET*2*2*halfFac)/32);
+  transpose_matrix_float<<<dimGrid,dimBlock>>>(d->d_outr,d->d_tx_outr);
+  transpose_matrix_float<<<dimGrid,dimBlock>>>(d->d_outi,d->d_tx_outi);
+
+  // ... (code for allocating h_idxs and d_idxs is fine to leave active) ...
+  int * h_idxs = (int *)malloc(sizeof(int)*NBASE);
+  int * d_idxs;
+  cudaMalloc((void **)(&d_idxs), sizeof(int)*NBASE);
+  // ... (population of h_idxs and cudaMemcpy is fine) ...
+  int ii = 0;
+  for (int i=0;i<NANTS;i++) {
+    for (int j=0;j<=i;j++) {
+      h_idxs[ii] = i*NANTS + j;
+      ii++;
+    }
+  }
+  cudaMemcpy(d_idxs,h_idxs,sizeof(int)*NBASE,cudaMemcpyHostToDevice);
+
+  // >>>>>>>> TEMPORARILY COMMENT THIS OUT <<<<<<<<
+  /*
+  // run kernel to finish things
+  corr_output_copy<<<NCHAN_PER_PACKET*2*NBASE/128,128>>>(d->d_tx_outr,d->d_tx_outi,d->d_output,d_idxs);
+  */
+  
+  cudaFree(d_idxs);
+  free(h_idxs);
+}
 
 // function to copy d_outr and d_outi to d_output
 // inputs are [NCHAN_PER_PACKET, 2 time, 2 pol, NANTS, NANTS]
 // the corr matrices are column major order
 // output needs to be [NBASE, NCHAN_PER_PACKET, 2 pol, 2 complex]
 // start with transpose to get [NANTS*NANTS, NCHAN_PER_PACKET*2*2], then sum into output using kernel
-void reorder_output(dmem * d) {
+void reorder_outputX(dmem * d) {
 
   // transpose input data
   dim3 dimBlock(32, 8), dimGrid((NANTS*NANTS)/32,(NCHAN_PER_PACKET*2*2*halfFac)/32);
@@ -631,19 +662,19 @@ void dcorrelator(dmem * d) {
 			    batchCount);
 
   // shown to be essential
-  // cudaDeviceSynchronize();
-  // end = clock();
-  // d->cubl += (float)(end - begin) / CLOCKS_PER_SEC;
+  cudaDeviceSynchronize();
+  end = clock();
+  d->cubl += (float)(end - begin) / CLOCKS_PER_SEC;
 
-  // // destroy stream
-  // cudaStreamDestroy(stream);
-  // cublasDestroy(cublasH);
+  // destroy stream
+  cudaStreamDestroy(stream);
+  cublasDestroy(cublasH);
   
-  // // reorder output data
-  // begin = clock();
-  // reorder_output(d);
-  // end = clock();
-  // d->outp += (float)(end - begin) / CLOCKS_PER_SEC;
+  // reorder output data
+  begin = clock();
+  reorder_output(d);
+  end = clock();
+  d->outp += (float)(end - begin) / CLOCKS_PER_SEC;
   
 }
 
