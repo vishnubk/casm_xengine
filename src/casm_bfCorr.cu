@@ -493,7 +493,7 @@ void reorder_output(dmem * d) {
 
 }
 
-void dcorrelator(dmem * d) {
+void dcorrelatorX(dmem * d) {
   // timing
   // copy, prepare, cublas, output
   clock_t begin, end;
@@ -548,7 +548,7 @@ void dcorrelator(dmem * d) {
 
 // correlator function
 // workflow: copy to device, reorder, stridedBatchedGemm, reorder
-void dcorrelatorORIG(dmem * d) {
+void dcorrelator(dmem * d) {
 
   // timing
   // copy, prepare, cublas, output
@@ -606,44 +606,44 @@ void dcorrelatorORIG(dmem * d) {
 
   // run strided batched gemm
   // ac
-  cublasHgemmStridedBatched(cublasH,transa,transb,m,n,k,
-			    &alpha,d->d_r,lda,strideA,
-			    d->d_r,ldb,strideB,&beta0,
-			    d->d_outr,ldc,strideC,
-			    batchCount);
-  // bd
-  cublasHgemmStridedBatched(cublasH,transa,transb,m,n,k,
-			    &alpha,d->d_i,lda,strideA,
-			    d->d_i,ldb,strideB,&beta1,
-			    d->d_outr,ldc,strideC,
-			    batchCount);
-  // -bc
-  cublasHgemmStridedBatched(cublasH,transa,transb,m,n,k,
-			    &malpha,d->d_i,lda,strideA,
-			    d->d_r,ldb,strideB,&beta0,
-			    d->d_outi,ldc,strideC,
-			    batchCount);
-  // ad
-  cublasHgemmStridedBatched(cublasH,transa,transb,m,n,k,
-			    &alpha,d->d_r,lda,strideA,
-			    d->d_i,ldb,strideB,&beta1,
-			    d->d_outi,ldc,strideC,
-			    batchCount);
+  // cublasHgemmStridedBatched(cublasH,transa,transb,m,n,k,
+	// 		    &alpha,d->d_r,lda,strideA,
+	// 		    d->d_r,ldb,strideB,&beta0,
+	// 		    d->d_outr,ldc,strideC,
+	// 		    batchCount);
+  // // bd
+  // cublasHgemmStridedBatched(cublasH,transa,transb,m,n,k,
+	// 		    &alpha,d->d_i,lda,strideA,
+	// 		    d->d_i,ldb,strideB,&beta1,
+	// 		    d->d_outr,ldc,strideC,
+	// 		    batchCount);
+  // // -bc
+  // cublasHgemmStridedBatched(cublasH,transa,transb,m,n,k,
+	// 		    &malpha,d->d_i,lda,strideA,
+	// 		    d->d_r,ldb,strideB,&beta0,
+	// 		    d->d_outi,ldc,strideC,
+	// 		    batchCount);
+  // // ad
+  // cublasHgemmStridedBatched(cublasH,transa,transb,m,n,k,
+	// 		    &alpha,d->d_r,lda,strideA,
+	// 		    d->d_i,ldb,strideB,&beta1,
+	// 		    d->d_outi,ldc,strideC,
+	// 		    batchCount);
 
-  // shown to be essential
-  cudaDeviceSynchronize();
-  end = clock();
-  d->cubl += (float)(end - begin) / CLOCKS_PER_SEC;
+  // // shown to be essential
+  // cudaDeviceSynchronize();
+  // end = clock();
+  // d->cubl += (float)(end - begin) / CLOCKS_PER_SEC;
 
-  // destroy stream
-  cudaStreamDestroy(stream);
-  cublasDestroy(cublasH);
+  // // destroy stream
+  // cudaStreamDestroy(stream);
+  // cublasDestroy(cublasH);
   
-  // reorder output data
-  begin = clock();
-  reorder_output(d);
-  end = clock();
-  d->outp += (float)(end - begin) / CLOCKS_PER_SEC;
+  // // reorder output data
+  // begin = clock();
+  // reorder_output(d);
+  // end = clock();
+  // d->outp += (float)(end - begin) / CLOCKS_PER_SEC;
   
 }
 
