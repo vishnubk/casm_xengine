@@ -494,9 +494,17 @@ void reorder_output(dmem * d) {
 }
 
 void dcorrelator(dmem * d) {
-    // ...
-    // cudaMemcpy(...) is fine, leave it
-    // ...
+    // zero out output arrays
+    cudaMemset(d->d_outr,0,NCHAN_PER_PACKET*2*2*NANTS*NANTS*halfFac*sizeof(half));
+    cudaMemset(d->d_outi,0,NCHAN_PER_PACKET*2*2*NANTS*NANTS*halfFac*sizeof(half));
+    cudaMemset(d->d_output,0,NCHAN_PER_PACKET*2*NANTS*NANTS*sizeof(float));
+    
+    // copy to device  
+    //memcpy(d->h_pinned_input,d->h_input,NPACKETS_PER_BLOCK*NANTS*NCHAN_PER_PACKET*2*2);
+    begin = clock();
+    cudaMemcpy(d->d_input,d->h_input,NPACKETS_PER_BLOCK*NANTS*NCHAN_PER_PACKET*2*2,cudaMemcpyHostToDevice);
+    end = clock();
+    d->cp += (float)(end - begin) / CLOCKS_PER_SEC;
 
     // >>>>>>>>>> TEMPORARILY COMMENT OUT THIS BLOCK <<<<<<<<<<
     
@@ -508,7 +516,6 @@ void dcorrelator(dmem * d) {
     end = clock();
     d->prep += (float)(end - begin) / CLOCKS_PER_SEC;
     
-    // >>>>>>>>>> END OF BLOCK TO COMMENT OUT <<<<<<<<<<
 
 
     // ...
