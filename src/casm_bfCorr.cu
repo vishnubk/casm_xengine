@@ -493,9 +493,44 @@ void reorder_output(dmem * d) {
 
 }
 
+void dcorrelator(dmem * d) {
+    // ...
+    // cudaMemcpy(...) is fine, leave it
+    // ...
+
+    // >>>>>>>>>> TEMPORARILY COMMENT OUT THIS BLOCK <<<<<<<<<<
+    /*
+    begin = clock();
+    reorder_input(d->d_input,d->d_tx,d->d_r,d->d_i);
+    
+    // not sure if essential
+    cudaDeviceSynchronize();
+    end = clock();
+    d->prep += (float)(end - begin) / CLOCKS_PER_SEC;
+    */
+    // >>>>>>>>>> END OF BLOCK TO COMMENT OUT <<<<<<<<<<
+
+
+    // ...
+    // Leave the entire cublasHgemmStridedBatched block untouched.
+    // It will run on zeroed/garbage data, which is perfectly fine for this test.
+    // We are not checking for correct results, only for memory corruption.
+    // ...
+    
+
+    // >>>>>>>>>> TEMPORARILY COMMENT OUT THIS BLOCK <<<<<<<<<<
+    /*
+    begin = clock();
+    reorder_output(d);
+    end = clock();
+    d->outp += (float)(end - begin) / CLOCKS_PER_SEC;
+    */
+    // >>>>>>>>>> END OF BLOCK TO COMMENT OUT <<<<<<<<<<
+}
+
 // correlator function
 // workflow: copy to device, reorder, stridedBatchedGemm, reorder
-void dcorrelator(dmem * d) {
+void dcorrelatorORIG(dmem * d) {
 
   // timing
   // copy, prepare, cublas, output
@@ -1488,8 +1523,6 @@ int main (int argc, char *argv[]) {
     fclose(fin);
     exit(1);
   }
-  
-
 
   
   // DADA stuff
