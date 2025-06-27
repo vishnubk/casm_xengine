@@ -515,9 +515,10 @@ void dcorrelator(dmem * d) {
     cudaDeviceSynchronize();
     end = clock();
     d->prep += (float)(end - begin) / CLOCKS_PER_SEC;
-    
-
-
+    // not sure if essential
+    cudaDeviceSynchronize();
+    end = clock();
+    d->prep += (float)(end - begin) / CLOCKS_PER_SEC;
     // ...
     // Leave the entire cublasHgemmStridedBatched block untouched.
     // It will run on zeroed/garbage data, which is perfectly fine for this test.
