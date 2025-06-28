@@ -130,7 +130,7 @@ int dada_cuda_dbregister (dada_hdu_t * hdu)
 
 
 // allocate device memory
-void initialize(dmem * d, int bf, int subtract_ib) {
+void initialize(dmem * d, int bf, int subtract_ib, int nbase_val) {
   
   // for correlator
   if (bf==0) {
@@ -139,7 +139,7 @@ void initialize(dmem * d, int bf, int subtract_ib) {
     cudaMalloc((void **)(&d->d_r), sizeof(half)*NCHAN_PER_PACKET*2*NANTS*NPACKETS_PER_BLOCK*2);
     cudaMalloc((void **)(&d->d_i), sizeof(half)*NCHAN_PER_PACKET*2*NANTS*NPACKETS_PER_BLOCK*2);
     cudaMalloc((void **)(&d->d_tx), sizeof(char)*NPACKETS_PER_BLOCK*NANTS*NCHAN_PER_PACKET*2*2);
-    cudaMalloc((void **)(&d->d_output), sizeof(float)*NBASE*NCHAN_PER_PACKET*2*2);
+    cudaMalloc((void **)(&d->d_output), sizeof(float)*nbase_val*NCHAN_PER_PACKET*2*2);
     cudaMalloc((void **)(&d->d_outr), sizeof(half)*NCHAN_PER_PACKET*2*2*NANTS*NANTS*halfFac);
     cudaMalloc((void **)(&d->d_outi), sizeof(half)*NCHAN_PER_PACKET*2*2*NANTS*NANTS*halfFac);
     cudaMalloc((void **)(&d->d_tx_outr), sizeof(half)*NCHAN_PER_PACKET*2*2*NANTS*NANTS*halfFac);
@@ -421,7 +421,7 @@ __global__ void corr_output_copy(half *outr, half *outi, float *output, int *ind
   
 }
 
-void reorder_output(dmem * d) {
+void reorder_output(dmem * d, int nbase_val) {
 
   cudaError_t err; // Variable to hold error codes
 
@@ -461,7 +461,7 @@ void reorder_output(dmem * d) {
 
 
   // ... (rest of the function) ...
-  int * h_idxs = (int *)malloc(sizeof(int)*NBASE);
+  int * h_idxs = (int *)malloc(sizeof(int)*nbase_val);
   // ...
   free(h_idxs);
 }
@@ -471,80 +471,8 @@ void reorder_output(dmem * d) {
 // the corr matrices are column major order
 // output needs to be [NBASE, NCHAN_PER_PACKET, 2 pol, 2 complex]
 // start with transpose to get [NANTS*NANTS, NCHAN_PER_PACKET*2*2], then sum into output using kernel
-void reorder_outputX(dmem * d) {
 
-  // transpose input data
-  dim3 dimBlock(32, 8), dimGrid((NANTS*NANTS)/32,(NCHAN_PER_PACKET*2*2*halfFac)/32);
-  transpose_matrix_float<<<dimGrid,dimBlock>>>(d->d_outr,d->d_tx_outr);
-  transpose_matrix_float<<<dimGrid,dimBlock>>>(d->d_outi,d->d_tx_outi);
-
-  // look at output
-  /*char * odata = (char *)malloc(sizeof(char)*384*4*NANTS*NANTS*2*halfFac);
-  cudaMemcpy(odata,d->d_tx_outr,384*4*NANTS*NANTS*2*halfFac,cudaMemcpyDeviceToHost);
-  FILE *fout;
-  fout=fopen("test2.test","wb");
-  fwrite(odata,sizeof(char),384*4*NANTS*NANTS*2*halfFac,fout);
-  fclose(fout);*/
-
-  
-  /*
-  // set up for geam
-  cublasHandle_t cublasH = NULL;
-  cudaStream_t stream = NULL;
-  cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
-  cublasSetStream(cublasH, stream);
-
-  // transpose output matrices into tx_outr and tx_outi
-  cublasOperation_t transa = CUBLAS_OP_T;
-  cublasOperation_t transb = CUBLAS_OP_N;
-  const int m = NCHAN_PER_PACKET*2*2;
-  const int n = NANTS*NANTS/16; // columns in output
-  const double alpha = 1.0;
-  const double beta = 0.0;
-  const int lda = n;
-  const int ldb = m;
-  const int ldc = ldb;
-  cublasDgeam(cublasH,transa,transb,m,n,
-	      &alpha,(double *)(d->d_outr),
-	      lda,&beta,(double *)(d->d_tx_outr),
-	      ldb,(double *)(d->d_tx_outr),ldc);
-  cublasDgeam(cublasH,transa,transb,m,n,
-	      &alpha,(double *)(d->d_outi),
-	      lda,&beta,(double *)(d->d_tx_outi),
-	      ldb,(double *)(d->d_tx_outi),ldc);
-  */
-  // now run kernel to sum into output
-  int * h_idxs = (int *)malloc(sizeof(int)*NBASE);
-  int * d_idxs;
-  cudaMalloc((void **)(&d_idxs), sizeof(int)*NBASE);
-  int ii = 0;
-  // upper triangular order (column major) to match xGPU (not the same as CASA!)
-  for (int i=0;i<NANTS;i++) {
-    for (int j=0;j<=i;j++) {
-      h_idxs[ii] = i*NANTS + j;
-      ii++;
-    }
-  }
-  cudaMemcpy(d_idxs,h_idxs,sizeof(int)*NBASE,cudaMemcpyHostToDevice);
-
-  // run kernel to finish things
-  corr_output_copy<<<NCHAN_PER_PACKET*2*NBASE/128,128>>>(d->d_tx_outr,d->d_tx_outi,d->d_output,d_idxs);
-
-  /*char * odata = (char *)malloc(sizeof(char)*384*4*NBASE*4);
-  cudaMemcpy(odata,d->d_output,384*4*NBASE*4,cudaMemcpyDeviceToHost);
-  FILE *fout;
-  fout=fopen("test3.test","wb");
-  fwrite(odata,sizeof(char),384*4*NBASE*4,fout);
-  fclose(fout);*/
-
-  
-  cudaFree(d_idxs);
-  free(h_idxs);
-  //cudaStreamDestroy(stream);  
-
-}
-
-void dcorrelatorX(dmem * d) {
+void dcorrelatorX(dmem * d, int nbase_val) {
   // timing
   // copy, prepare, cublas, output
   clock_t begin, end;
@@ -599,7 +527,7 @@ void dcorrelatorX(dmem * d) {
 
 // correlator function
 // workflow: copy to device, reorder, stridedBatchedGemm, reorder
-void dcorrelator(dmem * d) {
+void dcorrelator(dmem * d, int nbase_val) {
 
   // timing
   // copy, prepare, cublas, output
@@ -692,7 +620,7 @@ void dcorrelator(dmem * d) {
   
   // reorder output data
   begin = clock();
-  reorder_output(d);
+  reorder_output(d, nbase_val);
   end = clock();
   d->outp += (float)(end - begin) / CLOCKS_PER_SEC;
   
@@ -1462,6 +1390,11 @@ int main (int argc, char *argv[]) {
 	}
     }
 
+  // Calculate the number of baselines dynamically from NANTS
+  const int nants_val = NANTS; // Use a const to be safe
+  const int nbase_val = nants_val * (nants_val + 1) / 2;
+  syslog(LOG_INFO, "Using NANTS=%d, which gives NBASE=%d", nants_val, nbase_val);
+  
   // Bind to cpu core
   if (core >= 0)
     {
@@ -1472,7 +1405,7 @@ int main (int argc, char *argv[]) {
 
   // allocate device memory
   dmem d;
-  initialize(&d,bf,subtract_ib);
+  initialize(&d,bf,subtract_ib, nbase_val);
 
   // set up for beamformer
   FILE *ff, *fp;
@@ -1558,14 +1491,14 @@ int main (int argc, char *argv[]) {
       // run correlator or beamformer, and output data
       if (bf==0) {
 	if (DEBUG) syslog(LOG_INFO,"run correlator");
-	dcorrelator(&d);
+	dcorrelator(&d, nbase_val);
 	if (DEBUG) syslog(LOG_INFO,"copy to host");
-	output_size = NBASE*NCHAN_PER_PACKET*2*2*4;
+	output_size = nbase_val*NCHAN_PER_PACKET*2*2*4;
 	output_data = (char *)malloc(output_size);
 	cudaMemcpy(output_data,d.d_output,output_size,cudaMemcpyDeviceToHost);
 	
 	fout = fopen("output.dat","ab");
-	fwrite((float *)output_data,sizeof(float),NBASE*NCHAN_PER_PACKET*2*2,fout);
+	fwrite((float *)output_data,sizeof(float),nbase_val*NCHAN_PER_PACKET*2*2,fout);
 	fclose(fout);
       }
       else {
@@ -1663,7 +1596,7 @@ int main (int argc, char *argv[]) {
   uint64_t block_out = ipcbuf_get_bufsz ((ipcbuf_t *) hdu_out->data_block);
   syslog(LOG_INFO, "main: have input and output block sizes %d %d\n",block_size,block_out);
   if (bf==0) 
-    syslog(LOG_INFO, "main: EXPECT input and output block sizes %d %d\n",NPACKETS_PER_BLOCK*NANTS*NCHAN_PER_PACKET*2*2,NBASE*NCHAN_PER_PACKET*2*2*4);
+    syslog(LOG_INFO, "main: EXPECT input and output block sizes %d %d\n",NPACKETS_PER_BLOCK*NANTS*NCHAN_PER_PACKET*2*2,nbase_val*NCHAN_PER_PACKET*2*2*4);
   else
     syslog(LOG_INFO, "main: EXPECT input and output block sizes %d %d\n",NPACKETS_PER_BLOCK*NANTS*NCHAN_PER_PACKET*2*2,(NPACKETS_PER_BLOCK/4)*(NCHAN_PER_PACKET/8)*NBEAMS);
   uint64_t  bytes_read = 0;
@@ -1702,7 +1635,7 @@ int main (int argc, char *argv[]) {
     //begin = clock();
     if (bf==0) {
       if (DEBUG) syslog(LOG_INFO,"run correlator");
-      dcorrelator(&d);
+      dcorrelator(&d, nbase_val);
       if (DEBUG) syslog(LOG_INFO,"copy to host");
       cudaMemcpy(output_buffer,d.d_output,block_out,cudaMemcpyDeviceToHost);
     }
