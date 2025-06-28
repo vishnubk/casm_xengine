@@ -1596,7 +1596,7 @@ int main (int argc, char *argv[]) {
     }
     else {
       if (DEBUG) syslog(LOG_INFO,"run beamformer");
-      //dbeamformer(&d);
+      dbeamformer(&d);
       if (DEBUG) syslog(LOG_INFO,"copy to host");
       cudaMemcpy(output_buffer,d.d_bigpower,block_out,cudaMemcpyDeviceToHost);            
       
