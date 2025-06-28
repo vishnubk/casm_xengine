@@ -1,4 +1,5 @@
-/* dsaX_capture.c: Code to capture packets over a socket and write to a dada buffer.
+/* casm_capture.c: Code to capture packets over a socket and write to a dada buffer.
+This is directly taken from Vikram Ravi's dsaX_capture.c code.
 
 cmain: runs capture loop, and interfaces dada buffer
 control_thread: deals with control commands
