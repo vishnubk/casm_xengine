@@ -472,59 +472,6 @@ void reorder_output(dmem * d, int nbase_val) {
 // output needs to be [NBASE, NCHAN_PER_PACKET, 2 pol, 2 complex]
 // start with transpose to get [NANTS*NANTS, NCHAN_PER_PACKET*2*2], then sum into output using kernel
 
-void dcorrelatorX(dmem * d, int nbase_val) {
-  // timing
-  // copy, prepare, cublas, output
-  clock_t begin, end;
-
-  // zero out output arrays
-  cudaMemset(d->d_outr,0,NCHAN_PER_PACKET*2*2*NANTS*NANTS*halfFac*sizeof(half));
-  cudaMemset(d->d_outi,0,NCHAN_PER_PACKET*2*2*NANTS*NANTS*halfFac*sizeof(half));
-  cudaMemset(d->d_output,0,NCHAN_PER_PACKET*2*NANTS*NANTS*sizeof(float));
-  
-  // copy to device  
-  //memcpy(d->h_pinned_input,d->h_input,NPACKETS_PER_BLOCK*NANTS*NCHAN_PER_PACKET*2*2);
-  begin = clock();
-  cudaMemcpy(d->d_input,d->h_input,NPACKETS_PER_BLOCK*NANTS*NCHAN_PER_PACKET*2*2,cudaMemcpyHostToDevice);
-  end = clock();
-  d->cp += (float)(end - begin) / CLOCKS_PER_SEC;
-
-  // reorder input
-  begin = clock();
-  reorder_input(d->d_input,d->d_tx,d->d_r,d->d_i);
-  
-  // not sure if essential
-  cudaDeviceSynchronize();
-  end = clock();
-  d->prep += (float)(end - begin) / CLOCKS_PER_SEC;
-
-    // >>>>>>>>>> TEMPORARILY COMMENT OUT THIS BLOCK <<<<<<<<<<
-    
-    // begin = clock();
-    // reorder_input(d->d_input,d->d_tx,d->d_r,d->d_i);
-    
-    // // not sure if essential
-    // cudaDeviceSynchronize();
-    // end = clock();
-    // d->prep += (float)(end - begin) / CLOCKS_PER_SEC;
-
-    // ...
-    // Leave the entire cublasHgemmStridedBatched block untouched.
-    // It will run on zeroed/garbage data, which is perfectly fine for this test.
-    // We are not checking for correct results, only for memory corruption.
-    // ...
-    
-
-    // >>>>>>>>>> TEMPORARILY COMMENT OUT THIS BLOCK <<<<<<<<<<
-    /*
-    begin = clock();
-    reorder_output(d);
-    end = clock();
-    d->outp += (float)(end - begin) / CLOCKS_PER_SEC;
-    */
-    // >>>>>>>>>> END OF BLOCK TO COMMENT OUT <<<<<<<<<<
-}
-
 // correlator function
 // workflow: copy to device, reorder, stridedBatchedGemm, reorder
 void dcorrelator(dmem * d, int nbase_val) {
