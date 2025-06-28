@@ -72,7 +72,7 @@
 #define NPACKETS 2048
 #define NOUTBLOCKS 15 // number of input blocks stored by trigger
 #define NANTS 128
-#define NCHAN_PER_PACKET 384
+#define NCHAN_PER_PACKET 512
 #define NBEAMS 512
 
 // for beamformer
