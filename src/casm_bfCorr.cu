@@ -1450,7 +1450,7 @@ int main (int argc, char *argv[]) {
       }
       else {
 	if (DEBUG) syslog(LOG_INFO,"run beamformer");
-	dbeamformer(&d);
+	//dbeamformer(&d);
 	syslog(LOG_INFO,"%f %f %f %f \n",d.cp,d.prep,d.cubl,d.outp);
 	if (DEBUG) syslog(LOG_INFO,"copy to host");
 	output_size = (NPACKETS_PER_BLOCK/4)*(NCHAN_PER_PACKET/8)*NBEAMS;
@@ -1588,7 +1588,7 @@ int main (int argc, char *argv[]) {
     }
     else {
       if (DEBUG) syslog(LOG_INFO,"run beamformer");
-      dbeamformer(&d);
+      //dbeamformer(&d);
       if (DEBUG) syslog(LOG_INFO,"copy to host");
       cudaMemcpy(output_buffer,d.d_bigpower,block_out,cudaMemcpyDeviceToHost);            
       
