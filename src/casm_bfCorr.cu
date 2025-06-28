@@ -734,7 +734,7 @@ __global__ void sum_beam(unsigned char * input, float * output) {
   int tid = threadIdx.x;
   int npartials = 48; // number partial sums
 
-  int idx0 = bid*512*48 + tid*48;
+  int idx0 = bid*512*(NANTS/2) + tid*(NANTS/2);
   psum[tid] = 0.;
   for (int i=idx0;i<npartials+idx0;i++)
     psum[tid] += (float)(input[i]);
@@ -802,14 +802,14 @@ __global__ void sum_ib(half * dra, half * dia, half * drb, half * dib, half * do
   int bid = blockIdx.x;
   int tid = threadIdx.x;
 
-  int idx = bid*48 + tid;
+  int idx = bid*(NANTS/2) + tid;
   ppsum[tid] = 0.;
   if (flagants[tid]==0)
     ppsum[tid] = dra[idx]*dra[idx] + dia[idx]*dia[idx] + drb[idx]*drb[idx] + dib[idx]*dib[idx];
   __syncthreads();
 
   if (tid < 16) {
-    idx = bid*48 + tid + 32;
+    idx = bid*(NANTS/2) + tid + 32;
     if (flagants[tid+32] == 0.)
       ppsum[tid] += dra[idx]*dra[idx] + dia[idx]*dia[idx] + drb[idx]*drb[idx] + dib[idx]*dib[idx];
   }
@@ -991,7 +991,7 @@ void dbeamformer(dmem * d) {
     begin = clock();
 
     // incoherent beam summation
-    sum_ib<<<NCHAN_PER_PACKET*2*NPACKETS_PER_BLOCK,32,0,streams[iArm]>>>(d->d_bar,d->d_bai,d->d_bbr,d->d_bbi,d->d_ibsum,d->d_flagants+iArm*48);
+    sum_ib<<<NCHAN_PER_PACKET*2*NPACKETS_PER_BLOCK,32,0,streams[iArm]>>>(d->d_bar,d->d_bai,d->d_bbr,d->d_bbi,d->d_ibsum,d->d_flagants+iArm*(NANTS/2));
     
     dim3 dimBlock2(32, 8), dimGrid2(NPACKETS_PER_BLOCK/4/32,(NCHAN_PER_PACKET/8)*(NBEAMS/2)*8*2/32);
     power_sum_and_transpose_output<<<dimGrid2,dimBlock2,0,streams[iArm]>>>(d->d_bigbeam_a_r,d->d_bigbeam_b_r,d->d_bigbeam_a_i,d->d_bigbeam_b_i,d->d_ibsum,d->subtract_ib,d->d_htx);
@@ -1034,15 +1034,15 @@ __global__ void populate_weights_matrix(float * antpos_e, float * antpos_n, floa
   int idx = (int)(iidx % ((NBEAMS/2)*(NANTS/2)));
   int bm = (int)(idx / (NANTS/2));
   int a = (int)(idx % (NANTS/2));
-  int widx = (a+48*iArm)*(NCHAN_PER_PACKET/8)*2*2 + fq*2*2;
+  int widx = (a+(NANTS/2)*iArm)*(NCHAN_PER_PACKET/8)*2*2 + fq*2*2;
   
   // calculate weights
   float theta, afac, twr, twi;
   if (iArm==0) {
     theta = sep*(127.-bm*1.)*PI/10800.; // radians
     afac = -2.*PI*fqs[fq]*theta/CVAC; // factor for rotate
-    twr = cosf(afac*antpos_e[a+48*iArm]);
-    twi = sinf(afac*antpos_e[a+48*iArm]);
+    twr = cosf(afac*antpos_e[a+(NANTS/2)*iArm]);
+    twi = sinf(afac*antpos_e[a+(NANTS/2)*iArm]);
     war[inidx] = __float2half((twr*calibs[widx] - twi*calibs[widx+1]));
     wai[inidx] = __float2half((twi*calibs[widx] + twr*calibs[widx+1]));
     wbr[inidx] = __float2half((twr*calibs[widx+2] - twi*calibs[widx+3]));
@@ -1055,8 +1055,8 @@ __global__ void populate_weights_matrix(float * antpos_e, float * antpos_n, floa
   if (iArm==1) {
     theta = sep_ns*(127.-bm*1.)*PI/10800.-(PI/180.)*dec; // radians
     afac = -2.*PI*fqs[fq]*sinf(theta)/CVAC; // factor for rotate
-    twr = cosf(afac*antpos_n[a+48*iArm]);
-    twi = sinf(afac*antpos_n[a+48*iArm]);
+    twr = cosf(afac*antpos_n[a+(NANTS/2)*iArm]);
+    twi = sinf(afac*antpos_n[a+(NANTS/2)*iArm]);
     war[inidx] = __float2half((twr*calibs[widx] - twi*calibs[widx+1]));
     wai[inidx] = __float2half((twi*calibs[widx] + twr*calibs[widx+1]));
     wbr[inidx] = __float2half((twr*calibs[widx+2] - twi*calibs[widx+3]));
