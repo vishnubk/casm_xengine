@@ -1450,7 +1450,7 @@ int main (int argc, char *argv[]) {
       }
       else {
 	if (DEBUG) syslog(LOG_INFO,"run beamformer");
-	//dbeamformer(&d);
+	dbeamformer(&d);
 	syslog(LOG_INFO,"%f %f %f %f \n",d.cp,d.prep,d.cubl,d.outp);
 	if (DEBUG) syslog(LOG_INFO,"copy to host");
 	output_size = (NPACKETS_PER_BLOCK/4)*(NCHAN_PER_PACKET/8)*NBEAMS;
@@ -1458,6 +1458,14 @@ int main (int argc, char *argv[]) {
 	cudaMemcpy(output_data,d.d_bigpower,output_size,cudaMemcpyDeviceToHost);	
 	
 	fout = fopen("output.dat","ab");
+
+  // >>>>>> ADD THIS CHECK <<<<<<
+  if (fout == NULL) {
+      fprintf(stderr, "FATAL: fopen() returned NULL! The heap is likely corrupt.\n");
+      perror("fopen"); // This will print the system error, e.g., "Cannot allocate memory"
+      exit(1);
+  }
+
 	fwrite((unsigned char *)output_data,sizeof(unsigned char),output_size,fout);
 	fclose(fout);
       }
