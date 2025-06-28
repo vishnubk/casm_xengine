@@ -16,8 +16,8 @@ SRC_BFCORR := casm_bfCorr.cu
 LIBS_BFCORR := $(COMMON_LIBS) # bfCorr has no extra libraries
 
 # --- Project 2: frb_search_pipeline ---
-TARGET_PIPELINE := frb_search_pipeline
-SRC_PIPELINE := pipeline.cu
+TARGET_PIPELINE := casm_hella
+SRC_PIPELINE := casm_hella.cu
 
 # Add dedisp-specific paths and libraries for the pipeline
 # <<< IMPORTANT: EDIT THESE DEDISP PATHS >>>
