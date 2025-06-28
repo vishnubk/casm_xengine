@@ -13,7 +13,7 @@ int main() {
   }
 
   fprintf(stderr, "Setting key...\n");
-  dada_hdu_set_key(hdu, 0x1234);
+  dada_hdu_set_key(hdu, 0xeadb);
 
   fprintf(stderr, "Connecting HDU...\n");
   if (dada_hdu_connect(hdu) < 0) {
