@@ -763,7 +763,6 @@ int main (int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
   
-  
   // OPEN CONNECTION TO DADA DB FOR WRITING
 
   if (DEBUG) syslog(LOG_INFO,"Creating HDU");
