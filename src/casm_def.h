@@ -71,7 +71,7 @@
 #define NPACKETS_PER_FIL 2
 #define NPACKETS 2048
 #define NOUTBLOCKS 15 // number of input blocks stored by trigger
-#define NANTS 96
+#define NANTS 128
 #define NCHAN_PER_PACKET 384
 #define NBEAMS 512
 
