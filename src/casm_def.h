@@ -71,14 +71,14 @@
 #define NPACKETS_PER_FIL 2
 #define NPACKETS 2048
 #define NOUTBLOCKS 15 // number of input blocks stored by trigger
-#define NANTS 128
+#define NANTS 256
 #define NCHAN_PER_PACKET 512
 #define NBEAMS 512
 
 // for beamformer
 //#define sep 1.0 // arcmin
 #define NW 48 // number of weights per 384 chans. Also the number of channels formed
-#define NANT 63
+#define NANT 128
 #define BEAM_OUT 23
 #define NSTREAMS 4
 #define NBP 8 // number of previous BPs to average
