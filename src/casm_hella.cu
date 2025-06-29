@@ -12,7 +12,7 @@
 #include <nppcore.h>
 #include <nppi.h>
 #include <npps.h>
-#include <helper_cuda.h>
+//#include <helper_cuda.h>
 #include <curand.h>
 #include <curand_kernel.h>
 #include <stdint.h>
@@ -72,6 +72,14 @@ const int MAXRECV = 500;
 #define MAX_GIANTS 10000
 #define DADA_BLOCK_KEY 0x0000dada // for capture program.
 #define SOCKET_CADENCE 1
+
+#define checkCuda(err) { \
+  if (err != cudaSuccess) { \
+    fprintf(stderr, "FATAL CUDA Error in %s at line %d: %s\n", \
+            __FILE__, __LINE__, cudaGetErrorString(err)); \
+    exit(EXIT_FAILURE); \
+  } \
+}
 
 int finished = 0;
 
