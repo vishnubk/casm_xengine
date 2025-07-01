@@ -1,6 +1,7 @@
 # CASM-XEngine: A GPU-Accelerated Correlator and Beamformer
 
-This repository contains the source code for `casm-xengine`, a high-performance correlator and beamformer designed for the Coherent All-Sky Monitor based on Vikram Ravi's dsaX_xengine software that was developed fro the DSA-110. It utilizes CUDA for GPU acceleration to process data from antenna arrays.
+This repository contains the source code for `casm-xengine`, a high-performance correlator and beamformer designed for the Coherent All-Sky Monitor based on Vikram Ravi's dsaX_xengine software that was developed for the DSA-110: 
+https://github.com/dsa110/dsa110-xengine/tree/master. It utilizes CUDA for GPU acceleration to process data from antenna arrays.
 
 ## Project Purpose
 
