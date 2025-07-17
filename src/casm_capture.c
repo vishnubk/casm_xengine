@@ -601,7 +601,6 @@ void log_packet_details(const unsigned char* buffer, size_t size) {
 int main (int argc, char *argv[]) {
 
 
-  
   // startup syslog message
   // using LOG_LOCAL0
   openlog ("dsaX_capture", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL0);
@@ -839,6 +838,12 @@ int main (int argc, char *argv[]) {
   udpdb.port = dPort;
   udpdb.interface = strdup(iface);
   udpdb.hdu_bufsz = ipcbuf_get_bufsz ((ipcbuf_t *) hdu_out->data_block);
+  udpdb.packets_per_buffer = udpdb.hdu_bufsz / UDP_DATA;
+  udpdb.num_inputs = NSNAPS;
+  udpdb.verbose = 0;
+
+  udpdb.log = (void*)1; 
+
   // determine number of packets per block, must 
   if (udpdb.hdu_bufsz % UDP_DATA != 0)
   {
