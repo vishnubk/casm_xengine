@@ -601,6 +601,7 @@ void log_packet_details(const unsigned char* buffer, size_t size) {
 int main (int argc, char *argv[]) {
 
 
+  
   // startup syslog message
   // using LOG_LOCAL0
   openlog ("dsaX_capture", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL0);
@@ -611,7 +612,8 @@ int main (int argc, char *argv[]) {
 
   /* actual struct with info */
   udpdb_t udpdb;
-  
+  memset(&udpdb, 0, sizeof(udpdb));
+
   // input data block HDU key
   key_t out_key = CAPTURE_BLOCK_KEY;
 
