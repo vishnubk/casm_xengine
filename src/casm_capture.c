@@ -89,7 +89,7 @@ void dsaX_dbgpu_cleanup (dada_hdu_t * out)
 void usage()
 {
   fprintf (stdout,
-	   "dsaX_capture [options]\n"
+	   "casm_capture [options]\n"
 	   " -c core   bind process to CPU core [no default]\n"
 	   " -j IP to listen on for data packets [no default]\n"
 	   " -p PORT to listen to for data packets [default 4011]\n"
