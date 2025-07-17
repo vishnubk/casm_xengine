@@ -13,7 +13,10 @@ def setup_snap(IP,
     """
     f = CasperFpga(IP, transport=TapcpTransport)
     print('Starting initial upload and programming')
-    f.upload_to_ram_and_program(fn)
+    f.transport.upload_to_ram_and_program(fn, force=False)
+
+    snap = snap_fengine.SnapFengine(IP, use_microblaze=True)
+    snap.program(fn)
 
     # Obtaining SNAP board mac
     pid = Popen(["arp","-n",IP],stdout=PIPE)
