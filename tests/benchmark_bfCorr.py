@@ -10,9 +10,10 @@ try:
 except:
     pass
 
-os.system(f"dada_junkdb -k {in_key} -t 3600 header.txt")
 os.system(f"dada_db -k {in_key} -b 1073741824 -n 4")
 os.system(f"dada_db -k {out_key} -b 16777216 -n 4")
+time.sleep(1)
+os.system(f"dada_junkdb -k {in_key} -t 3600 header.txt")
 time.sleep(1)
 os.system(f"{dir}/casm_bfCorr -b -i {in_key} \
           -o {out_key} -f {dir}/empty.flags \
