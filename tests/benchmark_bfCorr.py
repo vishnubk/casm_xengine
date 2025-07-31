@@ -5,6 +5,8 @@ junkdb = False
 dir = '/home/user/software/casm_xengine/src'
 in_key = 'daaa'
 out_key = 'dddd'
+in_block_size = 2*1073741824
+out_block_size = 2*16777216
 
 try:
     os.system(f"dada_db -k {in_key} -d")
@@ -12,8 +14,8 @@ try:
 except:
     pass
 
-os.system(f"dada_db -k {in_key} -b 1073741824 -n 4")
-os.system(f"dada_db -k {out_key} -b 16777216 -n 4")
+os.system(f"dada_db -k {in_key} -b {in_block_size} -n 4")
+os.system(f"dada_db -k {out_key} -b {out_block_size} -n 4")
 time.sleep(1)
 
 if junkdb:
