@@ -1620,14 +1620,14 @@ int main (int argc, char *argv[]) {
     cout << "spent time " << d.cp << " " << d.prep << " " << d.cubl << " " << d.outp << " s" << endl;
     
     // write to output
-    
-    written = ipcio_write (hdu_out->data_block, (char *)(output_buffer), block_out);
-    if (written < block_out)
-      {
-	syslog(LOG_ERR, "main: failed to write all data to datablock [output]");
-	casm_dbgpu_cleanup (hdu_in, hdu_out);
-	return EXIT_FAILURE;
-      }
+    // Liam removing this for now.
+  //   written = ipcio_write (hdu_out->data_block, (char *)(output_buffer), block_out);
+  //   if (written < block_out)
+  //     {
+	// syslog(LOG_ERR, "main: failed to write all data to datablock [output]");
+	// casm_dbgpu_cleanup (hdu_in, hdu_out);
+	// return EXIT_FAILURE;
+  //     }
     
     if (DEBUG) syslog(LOG_INFO, "written block %d",blocks);	    
     blocks++;
