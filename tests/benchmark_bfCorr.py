@@ -19,7 +19,7 @@ time.sleep(1)
 if junkdb:
     os.system(f"dada_junkdb -k {in_key} -t 3600 header.txt")
 else:
-    os.system(f"{dir}/fake_writer ")
+    os.system(f"{dir}/fake_writer &")
 time.sleep(1)
 os.system(f"{dir}/casm_bfCorr -b -i {in_key} \
           -o {out_key} -f {dir}/empty.flags \
