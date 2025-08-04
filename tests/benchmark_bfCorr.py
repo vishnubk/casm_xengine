@@ -1,7 +1,7 @@
 import os
 import time
 
-junkdb = False
+junkdb = True
 dir = '/home/user/software/casm_xengine/src'
 in_key = 'daaa'
 out_key = 'dddd'
