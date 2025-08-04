@@ -45,8 +45,9 @@ def read_casm_pcap(pcap_file):
 
 if __name__ == "__main__":
     fn = sys.argv[1]
+    fn='NIC3_twoboards_ramp.pcap'
     for cap_ts, pkt_ts, chan0, bid, nch, nant, data in read_casm_pcap(fn):
-        #print(f"Captured @ {cap_ts:.6f}s | pkt_ts={pkt_ts} | chan0={chan0} | "
-        #      f"board_id={bid} | n_chans={nch} | n_antpols={nant} | payload={len(data)} bytes")
-        dataarr = decode_samples(data, n=8)
-        print(dataarr[0])
+        print(f"Captured @ {cap_ts:.6f}s | pkt_ts={pkt_ts} | chan0={chan0} | "
+             f"board_id={bid} | n_chans={nch} | n_antpols={nant} | payload={len(data)} bytes")
+#        dataarr = decode_samples(data, n=8)
+#        print(dataarr[0])
