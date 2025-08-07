@@ -49,5 +49,5 @@ if __name__ == "__main__":
         datavals = decode_samples(data, n=6144)
         print(f"Captured @ {cap_ts:.6f}s | pkt_ts={pkt_ts} | chan0={chan0} | "
              f"board_id={bid} | n_chans={nch} | n_antpols={nant} | payload={len(datavals)} samples")
-        print(datavals)
+        print(datavals[0].real, datavals[0].imag)
 
