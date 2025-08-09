@@ -5,7 +5,10 @@ import subprocess
 import statistics
 from datetime import datetime
 
+<<<<<<< HEAD
 # Configuration
+=======
+>>>>>>> 31ab04e300568f57e5ab98698c9286ad690620b8
 junkdb = False
 dir = '/home/user/software/casm_xengine/src'
 in_key = 'daaa'
