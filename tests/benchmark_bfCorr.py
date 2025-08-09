@@ -3,6 +3,8 @@ import time
 import re
 import subprocess
 import statistics
+import signal
+import psutil
 from datetime import datetime
 
 junkdb = False
@@ -40,16 +42,21 @@ except Exception:
     pass
 
 # Create new databases
+print("Creating DADA databases...")
 os.system(f"dada_db -k {in_key} -b {in_block_size} -n 4")
 os.system(f"dada_db -k {out_key} -b {out_block_size} -n 4")
 time.sleep(1)
 
 # Start data generation
+print("Starting data generation...")
 if junkdb:
     os.system(f"dada_junkdb -k {in_key} -t 3600 header.txt")
 else:
-    os.system(f"{dir}/fake_writer &")
-time.sleep(1)
+    # Start fake_writer in background and capture its PID
+    fake_writer_cmd = f"{dir}/fake_writer"
+    fake_writer_process = subprocess.Popen(fake_writer_cmd, shell=True)
+    print(f"Started fake_writer with PID: {fake_writer_process.pid}")
+time.sleep(2)  # Give more time for processes to start
 
 # Start beamformer and capture output
 print("Starting beamformer...")
@@ -69,43 +76,93 @@ cmd = (f"{dir}/casm_bfCorr -b -i {in_key} -o {out_key} "
 process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
                           stderr=subprocess.PIPE, text=True)
 
-# Parse timing output
+# Parse timing output with timeout
 line_count = 0
 start_time = time.time()
+timeout_seconds = 60  # 1 minute timeout
+last_output_time = time.time()
 
-for line in process.stderr:
-    if "spent time" in line:
-        line_count += 1
-        
-        # Parse timing values
-        match = re.search(r'spent time ([\d.e+-]+) ([\d.e+-]+) '
-                         r'([\d.e+-]+) ([\d.e+-]+) s', line)
-        if match:
-            copy_time = float(match.group(1))
-            prep_time = float(match.group(2))
-            cublas_time = float(match.group(3))
-            output_time = float(match.group(4))
-            
-            total_time = copy_time + prep_time + cublas_time + output_time
-            real_time_ratio = EXPECTED_BLOCK_TIME / total_time
-            
-            # Store values
-            copy_times.append(copy_time)
-            prep_times.append(prep_time)
-            cublas_times.append(cublas_time)
-            output_times.append(output_time)
-            total_times.append(total_time)
-            real_time_ratios.append(real_time_ratio)
-            
-            # Print progress every 10 blocks
-            if line_count % 10 == 0:
-                print(f"Processed {line_count} blocks... "
-                      f"(RT ratio: {real_time_ratio:.3f})")
-        
-        print(line.strip())
+print("Monitoring beamformer output...")
+print("(Press Ctrl+C to stop early)")
 
-# Wait for process to complete
-process.wait()
+try:
+    for line in process.stderr:
+        current_time = time.time()
+        last_output_time = current_time
+        
+        # Check for timeout
+        if current_time - start_time > timeout_seconds:
+            print(f"\n⚠️  Timeout reached ({timeout_seconds}s). Stopping benchmark.")
+            break
+            
+        if "spent time" in line:
+            line_count += 1
+            
+            # Parse timing values
+            match = re.search(r'spent time ([\d.e+-]+) ([\d.e+-]+) '
+                             r'([\d.e+-]+) ([\d.e+-]+) s', line)
+            if match:
+                copy_time = float(match.group(1))
+                prep_time = float(match.group(2))
+                cublas_time = float(match.group(3))
+                output_time = float(match.group(4))
+                
+                total_time = copy_time + prep_time + cublas_time + output_time
+                real_time_ratio = EXPECTED_BLOCK_TIME / total_time
+                
+                # Store values
+                copy_times.append(copy_time)
+                prep_times.append(prep_time)
+                cublas_times.append(cublas_time)
+                output_times.append(output_time)
+                total_times.append(total_time)
+                real_time_ratios.append(real_time_ratio)
+                
+                # Print progress every 10 blocks
+                if line_count % 10 == 0:
+                    print(f"Processed {line_count} blocks... "
+                          f"(RT ratio: {real_time_ratio:.3f})")
+            
+            print(line.strip())
+        else:
+            # Print other output for debugging
+            if "DEBUG:" in line or "ERROR:" in line or "WARNING:" in line:
+                print(f"[BEAMFORMER] {line.strip()}")
+            elif line.strip():  # Print non-empty lines
+                print(f"[BEAMFORMER] {line.strip()}")
+
+except KeyboardInterrupt:
+    print("\n⚠️  Benchmark interrupted by user.")
+    print("Cleaning up processes...")
+
+finally:
+    # Clean up processes
+    print("Cleaning up...")
+    
+    # Kill beamformer process
+    try:
+        process.terminate()
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        process.kill()
+    
+    # Kill fake_writer if it's still running
+    if not junkdb and 'fake_writer_process' in locals():
+        try:
+            fake_writer_process.terminate()
+            fake_writer_process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            fake_writer_process.kill()
+    
+    # Kill any remaining fake_writer processes
+    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+        try:
+            if 'fake_writer' in str(proc.info['cmdline']):
+                print(f"Killing fake_writer process {proc.info['pid']}")
+                proc.terminate()
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+
 end_time = time.time()
 
 # Calculate summary statistics
@@ -195,5 +252,10 @@ if total_times:
     
 else:
     print("No timing data collected!")
+    print("This might indicate:")
+    print("1. The beamformer didn't start properly")
+    print("2. There's a data format issue")
+    print("3. The fake_writer isn't producing data")
+    print("4. There's a synchronization issue")
 
 print("\nBenchmark completed.")
