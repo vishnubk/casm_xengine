@@ -1,4 +1,4 @@
-# Makefile for casm_bfCorr, the FRB Search Pipeline, and casm_capture
+# Makefile for casm_bfCorr, the FRB Search Pipeline, casm_capture, and fake_writer
 
 # --- Compilers ---
 NVCC := /usr/bin/nvcc
@@ -18,6 +18,14 @@ CAPTURE_LIBPATHS := $(COMMON_LIBPATHS)
 # Link against psrdada (which provides the DADA client API), pthread, and math
 LIBS_CAPTURE     := -lpsrdada -lpthread -lm
 
+# --- fake_writer (DADA test data generator) ---
+TARGET_FAKEWRITER := fake_writer
+SRC_FAKEWRITER    := fake_writer.c
+FAKEWRITER_CFLAGS := -Wall -O2
+FAKEWRITER_INCLUDES := $(COMMON_INCLUDES)
+FAKEWRITER_LIBPATHS := $(COMMON_LIBPATHS)
+LIBS_FAKEWRITER     := -lpsrdada -lpthread -lm
+
 # --- Project 1: casm_bfCorr ---
 TARGET_BFCORR := casm_bfCorr
 SRC_BFCORR    := casm_bfCorr.cu
@@ -33,7 +41,7 @@ LIBS_PIPELINE   := -lpsrdada -lcublas -ldedisp -lnppc -lnppi -lnpps -lcurand
 # --- Build Rules ---
 
 # Default: build all executables
-all: $(TARGET_BFCORR) $(TARGET_PIPELINE) $(TARGET_CAPTURE)
+all: $(TARGET_BFCORR) $(TARGET_PIPELINE) $(TARGET_CAPTURE) $(TARGET_FAKEWRITER)
 
 # Build casm_bfCorr
 $(TARGET_BFCORR): $(SRC_BFCORR) casm_def.h
@@ -55,9 +63,16 @@ $(TARGET_CAPTURE): $(SRC_CAPTURE)
 	    -o $@ $< \
 	    $(CAPTURE_INCLUDES) $(CAPTURE_LIBPATHS) $(LIBS_CAPTURE)
 
+# Build fake_writer
+$(TARGET_FAKEWRITER): $(SRC_FAKEWRITER)
+	@echo "--- Compiling $(TARGET_FAKEWRITER) ---"
+	$(CC) $(FAKEWRITER_CFLAGS) \
+	    -o $@ $< \
+	    $(FAKEWRITER_INCLUDES) $(FAKEWRITER_LIBPATHS) $(LIBS_FAKEWRITER)
+
 # Clean up all targets
 clean:
 	@echo "--- Cleaning up all targets ---"
-	rm -f $(TARGET_BFCORR) $(TARGET_PIPELINE) $(TARGET_CAPTURE)
+	rm -f $(TARGET_BFCORR) $(TARGET_PIPELINE) $(TARGET_CAPTURE) $(TARGET_FAKEWRITER)
 
 .PHONY: all clean
