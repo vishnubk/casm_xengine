@@ -76,6 +76,8 @@ cmd = (f"{dir}/casm_bfCorr -b -i {in_key} -o {out_key} "
 process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
                           stderr=subprocess.PIPE, text=True)
 
+
+exit()
 # Parse timing output with timeout
 line_count = 0
 start_time = time.time()
