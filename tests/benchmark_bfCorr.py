@@ -77,6 +77,7 @@ process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
                           stderr=subprocess.PIPE, text=True)
 
 
+print(process.stdout.read())
 exit()
 # Parse timing output with timeout
 line_count = 0
