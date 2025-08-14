@@ -78,12 +78,10 @@ process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
                           stderr=subprocess.PIPE, text=True)
 
 
-print(process.stdout.read())
-exit()
 # Parse timing output with timeout
 line_count = 0
 start_time = time.time()
-timeout_seconds = 60  # 1 minute timeout
+timeout_seconds = 10  # 10 seconds timeout
 last_output_time = time.time()
 
 print("Monitoring beamformer output...")
