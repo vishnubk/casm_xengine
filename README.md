@@ -1,36 +1,64 @@
-# CASM-XEngine: A GPU-Accelerated Correlator and Beamformer
+# CASM-XEngine: GPU-Accelerated Radio Astronomy Correlator & Beamformer
 
-This repository contains the source code for `casm-xengine`, a high-performance correlator and beamformer designed for the Coherent All-Sky Monitor based on Vikram Ravi's dsaX_xengine software that was developed for the DSA-110: 
-https://github.com/dsa110/dsa110-xengine/tree/master. It utilizes CUDA for GPU acceleration to process data from antenna arrays.
+High-performance CUDA-based correlator and beamformer for radio astronomy, derived from the DSA-110 xengine. Optimized for real-time processing of multi-beam, multi-antenna data streams.
 
-## Project Purpose
+## Features
 
-The primary function of this software is to capture, correlate, and beamform astronomical signals from a radio telescope. It appears to be designed for use with systems like DSA-X.
+- **Real-time beamforming**: 256+ antennas × 1024+ beams
+- **GPU acceleration**: CUDA kernels for CUBLAS operations
+- **Performance monitoring**: Built-in benchmarking with real-time ratio analysis
+- **Auto-configuration**: Automatically reads parameters from `casm_def.h`
+- **DADA integration**: PSRDADA-compatible data handling
 
-## Key Components
+## Quick Start
 
-The core logic is implemented in C and CUDA C++, located in the `src/` directory. Key files include:
--   `casm_correlator.c`, `casm_correlator_2.c`: Main correlator logic.
--   `casm_bfCorr.cu`, `casm_hella.cu`: GPU-accelerated beamforming and correlation kernels.
--   `casm_capture.c`, `dsaX_capture.c`: Data capture modules.
--   `read_vis.py`: A Python script for reading visibility data, likely for analysis or debugging.
+### Build
+```bash
+cd src
+make clean && make
+```
+
+### Benchmark
+```bash
+cd tests
+python benchmark_bfCorr.py
+```
+
+### Run Pipeline
+```bash
+cd scripts
+./pipeline.sh
+```
+
+## Configuration
+
+Key parameters in `src/casm_def.h`:
+- `NBEAMS`: Number of beamforming directions (default: 256)
+- `NANTS`: Number of antennas (default: 256)
+- `NPACKETS_PER_BLOCK`: Data block size (default: 2048)
+
+## Performance
+
+The benchmark system provides:
+- Real-time performance ratios
+- GPU timing breakdown (copy, prep, CUBLAS, output)
+- Throughput metrics (beams/second, operations/second)
+- Automatic timeout and process management
 
 ## Dependencies
 
--   **Python 3.10+**
--   **blimpy**: For handling Breakthrough Listen data formats.
--   **CUDA Toolkit**: For compiling the `.cu` source files.
+- CUDA Toolkit 11+
+- PSRDADA library
+- Python 3.8+ (for benchmarking)
+- GCC/Clang for C compilation
 
-## Building
+## Architecture
 
-The project uses a `Makefile` for compilation. To build the project, you will likely need to run:
+- **`casm_bfCorr.cu`**: Main beamformer with GPU kernels
+- **`casm_capture.c`**: Data capture from antenna arrays
+- **`fake_writer`**: Test data generator for development
+- **`benchmark_bfCorr.py`**: Performance testing framework
 
-```bash
-make
-```
+## License
 
-in the `src/` directory. Please refer to the `Makefile` for specific targets and options.
-
-## Usage
-
-The `scripts/` directory contains scripts for running the data processing pipeline, such as `run_pipeline.py` and `pipeline.sh`. These scripts likely use the compiled executables from `src/`.
+Derived from DSA-110 xengine (see original: https://github.com/dsa110/dsa110-xengine)
