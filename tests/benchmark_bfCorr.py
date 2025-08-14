@@ -15,6 +15,8 @@ out_key = 'dddd'
 in_block_size = 1073741824
 out_block_size = 16777216
 
+timeout_seconds = 120  # 120 seconds timeout
+
 # Constants for calculations
 NPACKETS_PER_BLOCK = 2048
 NANTS = 256
@@ -84,7 +86,6 @@ process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
 # Parse timing output with timeouts
 line_count = 0
 start_time = time.time()
-timeout_seconds = 10  # 10 seconds timeout
 last_output_time = time.time()
 
 print("Monitoring beamformer output...")
