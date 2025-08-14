@@ -18,9 +18,9 @@ out_block_size = 16777216
 # Constants for calculations
 NPACKETS_PER_BLOCK = 2048
 NANTS = 256
-NBEAMS = 1024
+NBEAMS = 512
 NCHAN_PER_PACKET = 512
-SAMPLING_TIME_US = 12  # microseconds per sample
+SAMPLING_TIME_US = 16.384  # microseconds per sample
 
 # Expected data production time per block (in seconds)
 EXPECTED_BLOCK_TIME = (NPACKETS_PER_BLOCK * SAMPLING_TIME_US) / 1_000_000
@@ -81,7 +81,7 @@ process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
                           stderr=subprocess.PIPE, text=True, bufsize=1)
 
 
-# Parse timing output with timeout
+# Parse timing output with timeouts
 line_count = 0
 start_time = time.time()
 timeout_seconds = 10  # 10 seconds timeout
