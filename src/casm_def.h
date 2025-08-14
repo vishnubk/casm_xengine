@@ -73,7 +73,7 @@
 #define NOUTBLOCKS 15 // number of input blocks stored by trigger
 #define NANTS 256
 #define NCHAN_PER_PACKET 512
-#define NBEAMS 256
+#define NBEAMS 2048
 
 // for beamformer
 //#define sep 1.0 // arcmin
