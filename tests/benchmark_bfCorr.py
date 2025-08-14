@@ -46,7 +46,7 @@ except Exception:
 print("Creating DADA databases...")
 os.system(f"dada_db -k {in_key} -b {in_block_size} -n 4")
 os.system(f"dada_db -k {out_key} -b {out_block_size} -n 4")
-time.sleep(1)
+
 
 # Start data generation
 print("Starting data generation...")
@@ -71,13 +71,14 @@ output_times = []
 total_times = []
 real_time_ratios = []
 
-#os.system(f"./casm_bfCorr -b -i daaa -o dddd -f empty.flags -a dummy.calib -p powers.out")
+# os.system(f"./casm_bfCorr -b -i daaa -o dddd "
+#           f"-f empty.flags -a dummy.calib -p powers.out")
 
 # Run beamformer and capture output
 cmd = (f"{dir}/casm_bfCorr -b -i {in_key} -o {out_key} "
        f"-f {dir}/empty.flags -a {dir}/dummy.calib -p {dir}/powers.out")
 process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
-                          stderr=subprocess.PIPE, text=True)
+                          stderr=subprocess.PIPE, text=True, bufsize=1)
 
 
 # Parse timing output with timeout
@@ -90,7 +91,8 @@ print("Monitoring beamformer output...")
 print("(Press Ctrl+C to stop early)")
 
 try:
-    for line in process.stderr:
+    # Read from both stdout and stderr to capture all output
+    while True:
         current_time = time.time()
         last_output_time = current_time
         
@@ -99,7 +101,17 @@ try:
             print(f"\n⚠️  Timeout reached ({timeout_seconds}s). Stopping benchmark.")
             process.terminate()  # Actually terminate the process
             break
-            
+        
+        # Try to read from stdout first (beamformer timing output is usually here)
+        line = process.stdout.readline()
+        if not line:
+            # If no stdout, try stderr
+            line = process.stderr.readline()
+            if not line:
+                # No output from either stream, small sleep to avoid busy waiting
+                time.sleep(0.01)
+                continue
+        
         if "spent time" in line:
             line_count += 1
             
@@ -135,6 +147,11 @@ try:
                 print(f"[BEAMFORMER] {line.strip()}")
             elif line.strip():  # Print non-empty lines
                 print(f"[BEAMFORMER] {line.strip()}")
+        
+        # Check if process has terminated
+        if process.poll() is not None:
+            print("Beamformer process has terminated.")
+            break
 
 except KeyboardInterrupt:
     print("\n⚠️  Benchmark interrupted by user.")
