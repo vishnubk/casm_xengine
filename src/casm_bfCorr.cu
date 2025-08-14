@@ -1579,6 +1579,7 @@ int main (int argc, char *argv[]) {
     }
     end = clock();
     time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    cout << "NBEAMS=" << NBEAMS << " NANTS=" << NANTS << " ";
     cout << "spent time " << d.cp << " " << d.prep << " " << d.cubl << " " << d.outp << " s" << endl;
     
     // write to output
