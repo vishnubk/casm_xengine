@@ -20,7 +20,7 @@ timeout_seconds = 120  # 120 seconds timeout
 # Constants for calculations
 NPACKETS_PER_BLOCK = 2048
 NANTS = 256
-NBEAMS = 512
+NBEAMS = 256
 NCHAN_PER_PACKET = 512
 SAMPLING_TIME_US = 16.384  # microseconds per sample
 
