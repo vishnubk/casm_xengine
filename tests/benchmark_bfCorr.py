@@ -9,6 +9,7 @@ from datetime import datetime
 
 junkdb = False
 dir = '/home/user/software/casm_xengine/src'
+dir='./'
 in_key = 'daaa'
 out_key = 'dddd'
 in_block_size = 1073741824
