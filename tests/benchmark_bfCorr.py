@@ -71,6 +71,8 @@ output_times = []
 total_times = []
 real_time_ratios = []
 
+os.system(f"./casm_bfCorr -b -i daaa -o dddd -f empty.flags -a dummy.calib -p powers.out")
+
 exit()
 # Run beamformer and capture output
 cmd = (f"{dir}/casm_bfCorr -b -i {in_key} -o {out_key} "
