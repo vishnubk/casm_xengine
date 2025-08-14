@@ -1581,22 +1581,12 @@ int main (int argc, char *argv[]) {
     time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
     cout << "NBEAMS=" << NBEAMS << " NANTS=" << NANTS << " ";
     cout << "spent time " << d.cp << " " << d.prep << " " << d.cubl << " " << d.outp << " s" << endl;
-    
-    // write to output
-    // Liam removing this for now.
-  //   written = ipcio_write (hdu_out->data_block, (char *)(output_buffer), block_out);
-  //   if (written < block_out)
-  //     {
-	// syslog(LOG_ERR, "main: failed to write all data to datablock [output]");
-	// casm_dbgpu_cleanup (hdu_in, hdu_out);
-	// return EXIT_FAILURE;
-  //     }
-    
+    cout << "  (copy=" << d.cp*1000 << "ms prep=" << d.prep*1000 << "ms cublas=" << d.cubl*1000 << "ms output=" << d.outp*1000 << "ms)" << endl;
+
     if (DEBUG) syslog(LOG_INFO, "written block %d",blocks);	    
     blocks++;
 
     
-      
     // finish up
     if (bytes_read < block_size)
       observation_complete = 1;
