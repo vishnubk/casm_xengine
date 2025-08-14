@@ -19,8 +19,31 @@ timeout_seconds = 15  # 120 seconds timeout
 # Constants for calculations
 NPACKETS_PER_BLOCK = 2048
 NANTS = 256
-NBEAMS = 1024
-NCHAN_PER_PACKET = 512
+
+# Read NBEAMS and NCHAN_PER_PACKET from casm_def.h
+
+
+def read_casm_def():
+    """Read NBEAMS and NCHAN_PER_PACKET from casm_def.h"""
+    nbeams = 256  # default fallback
+    nchan = 512   # default fallback
+    
+    try:
+        with open(f"{dir}/casm_def.h", "r") as f:
+            for line in f:
+                if line.strip().startswith("#define NBEAMS"):
+                    nbeams = int(line.split()[-1])
+                elif line.strip().startswith("#define NCHAN_PER_PACKET"):
+                    nchan = int(line.split()[-1])
+    except FileNotFoundError:
+        print(f"Warning: {dir}/casm_def.h not found, using defaults")
+    except Exception as e:
+        print(f"Warning: Error reading casm_def.h: {e}, using defaults")
+    
+    return nbeams, nchan
+
+
+NBEAMS, NCHAN_PER_PACKET = read_casm_def()
 SAMPLING_TIME_US = 16.384  # microseconds per sample
 
 # Expected data production time per block (in seconds)
