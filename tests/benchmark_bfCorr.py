@@ -15,7 +15,7 @@ out_key = 'dddd'
 in_block_size = 1073741824
 out_block_size = 16777216
 
-timeout_seconds = 120  # 120 seconds timeout
+timeout_seconds = 15  # 120 seconds timeout
 
 # Constants for calculations
 NPACKETS_PER_BLOCK = 2048
