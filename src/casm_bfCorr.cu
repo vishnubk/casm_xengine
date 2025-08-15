@@ -921,7 +921,7 @@ void dbeamformer(dmem * d) {
 			    d->d_bigbeam_a_i,ldc,strideC,
 			    batchCount);
   // ad
-  cublasHgemmStridedBatched(cublasH,transa,transb,mg,n,k,
+  cublasHgemmStridedBatched(cublasH,transa,transb,m,n,k,
 			    &alpha,d->d_bar,lda,strideA,
 			    d->weights_a_i,ldb,strideB,&beta1,
 			    d->d_bigbeam_a_i,ldc,strideC,
