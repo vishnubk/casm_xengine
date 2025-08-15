@@ -6,8 +6,8 @@ CC   := gcc
 
 # --- Common Flags and Paths ---
 COMMON_CFLAGS   := -g -O3 -std=c++14 -arch=sm_75 -Xcompiler="-pthread"
-COMMON_INCLUDES := -I/usr/local/cuda/include -I/usr/local/include/psrdada
-COMMON_LIBPATHS := -L/usr/local/cuda/lib64 -L/usr/local/lib
+COMMON_INCLUDES := -I/usr/local/cuda/include -I/usr/local/include/psrdada -I/usr/local/include/src
+COMMON_LIBPATHS := -L/usr/local/cuda/lib64 -L/usr/local/lib 
 
 # --- casm_capture (DADA capture) ---
 TARGET_CAPTURE   := casm_capture
