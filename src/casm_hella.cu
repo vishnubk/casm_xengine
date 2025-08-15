@@ -62,7 +62,7 @@ const int MAXRECV = 500;
 #define NMEDFILT 13
 #define NTSMED 7
 #define NBATCH 4
-#define NCHAN 768
+#define NCHAN 3072
 #define NBEAMS 64
 #define NCHAN_BOX 48
 #define NTIME_BOX 500
@@ -72,6 +72,29 @@ const int MAXRECV = 500;
 #define MAX_GIANTS 10000
 #define DADA_BLOCK_KEY 0x0000dada // for capture program.
 #define SOCKET_CADENCE 1
+
+// CASM frequency and timing parameters
+#define FREQ_CHANNEL_WIDTH 0.03075  // 0.03075 MHz
+#define CENTER_FREQ 450.0e6         // 450 MHz in Hz
+#define TIME_RESOLUTION 1.0e-3      // 1 ms in seconds
+
+// Other configurable constants
+#define SECONDS_PER_DAY 86400.0     // seconds in a day
+#define TIME_CONVERSION_FACTOR 2.62144e-4  // conversion factor for time calculations
+#define PROCESSING_TIME_LIMIT 4.1   // time limit for processing in seconds
+#define FLAG_NORMALIZATION_FACTOR 805306368.0  // normalization factor for flagging statistics
+
+// Statistical parameters for boxcar smoothing
+#define BOXCAR_MEAN 0.21368
+#define BOXCAR_STDS {0.001309, 0.00124735, 0.00103835, 0.00081225, 0.00062605, 0.00047785, 0.00036005}
+
+// Threshold parameters
+#define TIME_SERIES_HIGH_THRESHOLD 1.05
+#define TIME_SERIES_LOW_THRESHOLD 0.95
+#define STD_DEV_LOW_THRESHOLD 1.2
+#define STD_DEV_VERY_LOW_THRESHOLD 0.96
+#define STD_DEV_HIGH_THRESHOLD 1.5
+#define STD_DEV_VERY_HIGH_THRESHOLD 0.92
 
 #define checkCuda(err) { \
   if (err != cudaSuccess) { \
@@ -328,7 +351,7 @@ void initialize(FILE *fconf, pinfo * p) {
   
   
   // set up DM plan
-  dedisp_create_plan(&p->dedispersion_plan,NCHAN,262.144e-6,1498.75,0.244140625);
+  dedisp_create_plan(&p->dedispersion_plan,NCHAN,TIME_RESOLUTION,CENTER_FREQ/1e6,FREQ_CHANNEL_WIDTH);
   // generate DM list  
   dedisp_generate_dm_list(p->dedispersion_plan,p->minDM,p->maxDM,40,TOL);
   p->DMs = dedisp_get_dm_list(p->dedispersion_plan);
@@ -376,14 +399,14 @@ void initialize(FILE *fconf, pinfo * p) {
   p->boxes = nppiMalloc_32f_C1(p->ntime_out,(p->ndms-2)*p->nboxcar,&(p->boxes_step));
   p->imbox = nppiMalloc_32f_C1(p->ntime_dd,p->ndms,&(p->imbox_step));
   p->stds = (float *)malloc(sizeof(float)*p->nboxcar);
-  p->mean = 0.21368;
-  p->stds[0] = 0.001309;
-  p->stds[1] = 0.00124735;
-  p->stds[2] = 0.00103835;
-  p->stds[3] = 0.00081225;
-  p->stds[4] = 0.00062605;
-  p->stds[5] = 0.00047785;
-  p->stds[6] = 0.00036005;
+  p->mean = BOXCAR_MEAN;
+  p->stds[0] = BOXCAR_STDS[0];
+  p->stds[1] = BOXCAR_STDS[1];
+  p->stds[2] = BOXCAR_STDS[2];
+  p->stds[3] = BOXCAR_STDS[3];
+  p->stds[4] = BOXCAR_STDS[4];
+  p->stds[5] = BOXCAR_STDS[5];
+  p->stds[6] = BOXCAR_STDS[6];
   
   // peak finding
   p->dmt.resize((p->ndms-2)*p->ntime_out);
@@ -819,8 +842,8 @@ __global__ void divide_by_ts(half * data, float * ts, int width, int stride, int
   data[iidx] /= __float2half(ts[tsidx]);
   
   if (flag_ts==1) {
-    if (ts[tsidx]>1.05) data[iidx] = __float2half(1.);
-    if (ts[tsidx]<0.95) data[iidx] = __float2half(1.);
+    if (ts[tsidx]>TIME_SERIES_HIGH_THRESHOLD) data[iidx] = __float2half(1.);
+    if (ts[tsidx]<TIME_SERIES_LOW_THRESHOLD) data[iidx] = __float2half(1.);
   }
 
 
@@ -1730,10 +1753,10 @@ void find_peaks(pinfo *p, int bm) {
     if (sm==0) {
       myStd = calculateStdDevFloat(p->boxes+sm*(p->ndms-2)*p->boxes_step/sizeof(float),p->ntime_out,p->ndms-2,p->boxes_step/sizeof(float));
       if (bm==32) syslog(LOG_INFO,"STDDEV %g",myStd);
-      if (myStd<1.2) myStd = 1.;
-      if (myStd<0.96) myStd = 2.;
+      if (myStd<STD_DEV_LOW_THRESHOLD) myStd = 1.;
+      if (myStd<STD_DEV_VERY_LOW_THRESHOLD) myStd = 2.;
     }
-    if (myStd<1.5 && myStd>0.92) {
+    if (myStd<STD_DEV_HIGH_THRESHOLD && myStd>STD_DEV_VERY_HIGH_THRESHOLD) {
     
       // copy to thrust vector
       //cudaMemcpy(dmt_ptr,p->boxes+sm*(p->ndms-2)*p->boxes_step/sizeof(float),(p->ndms-2)*p->boxes_step,cudaMemcpyDeviceToDevice);
@@ -1817,7 +1840,7 @@ void output_peaks(pinfo *p, int samp, int restart_socket) {
       fprintf(fout,"A %g %d %g %d %d %g %d\n",p->peaks[i],p->samp[i]+samp,262.144e-6*(p->samp[i]+samp),p->width[i],p->dm_idx[i],p->DMs[p->dm_idx[i]],bm);
     else
     fprintf(fout,"B %g %d %g %d %d %g %d\n",p->peaks[i],p->samp[i]+samp,262.144e-6*(p->samp[i]+samp),p->width[i],p->dm_idx[i],p->DMs[p->dm_idx[i]],bm);*/
-      fprintf(fout,"%g %d %d %g %d %d %g %d\n",p->out_peaks[i],p->out_samp[i]+samp,p->out_samp[i]+samp,262.144e-6*(p->out_samp[i]+samp)/86400.,p->out_width[i],p->out_dm_idx[i],p->DMs[p->out_dm_idx[i]],p->out_beam[i]+p->BEAM0);
+      fprintf(fout,"%g %d %d %g %d %d %g %d\n",p->out_peaks[i],p->out_samp[i]+samp,p->out_samp[i]+samp,TIME_RESOLUTION*(p->out_samp[i]+samp)/SECONDS_PER_DAY,p->out_width[i],p->out_dm_idx[i],p->DMs[p->out_dm_idx[i]],p->out_beam[i]+p->BEAM0);
 
     }
     fclose(fout);
@@ -1864,7 +1887,7 @@ void output_peaks(pinfo *p, int samp, int restart_socket) {
 	oss << p->out_peaks[i] << " "
 	    << p->out_samp[i]+samp << " "
 	    << p->out_samp[i]+samp << " "
-	    << 262.144e-6*(p->out_samp[i]+samp)/86400. << " "
+	    << TIME_RESOLUTION*(p->out_samp[i]+samp)/SECONDS_PER_DAY << " "
 	    << p->out_width[i] << " "
 	    << p->out_dm_idx[i] << " "
 	    << p->DMs[p->out_dm_idx[i]] << " "
@@ -2170,7 +2193,7 @@ int main(int argc, char *argv[]) {
 	for (int i=0;i<NCHAN;i++) {
 	  //beamflags[bm] += (int)(p.h_flagSpec[j*NCHAN+i]);
 	  specflags[i] += (int)(1.*p.NTIME*p.h_flagSpec[j*NCHAN+i]);
-	  tot_flags += (1.*p.NTIME*p.h_flagSpec[j*NCHAN+i])/805306368.;
+	        tot_flags += (1.*p.NTIME*p.h_flagSpec[j*NCHAN+i])/FLAG_NORMALIZATION_FACTOR;
 	}
       }
       end = clock();
@@ -2200,7 +2223,7 @@ int main(int argc, char *argv[]) {
       //printf("Looping over beams...\n");
       bm = 0;
       tot_time = readt+flagt;
-      while ((bm<NBEAMS) && (tot_time<4.1) && (p.out_npeaks < MAX_GIANTS)) {
+      while ((bm<NBEAMS) && (tot_time<PROCESSING_TIME_LIMIT) && (p.out_npeaks < MAX_GIANTS)) {
 	//while ((bm<NBEAMS) && (p.out_npeaks < MAX_GIANTS)) {
       
 	//printf("dedisperse\n");
@@ -2270,7 +2293,7 @@ int main(int argc, char *argv[]) {
 
     syslog(LOG_INFO,"Beamstats %d giants %d %g\n",bm,p.out_npeaks,tot_flags);
     tot_flags = 0.;
-    syslog(LOG_INFO,"processed %g s in read %g flag %g dedisp %g smooth %g peak %g output %g [%g]\n",(p.ntime_dd)*2.62144e-4,readt,flagt,dedispt,smootht,peakt,outputt,readt+flagt+dedispt+smootht+peakt+outputt);
+    syslog(LOG_INFO,"processed %g s in read %g flag %g dedisp %g smooth %g peak %g output %g [%g]\n",(p.ntime_dd)*TIME_CONVERSION_FACTOR,readt,flagt,dedispt,smootht,peakt,outputt,readt+flagt+dedispt+smootht+peakt+outputt);
     syslog(LOG_INFO,"Flagging: %g %g %g %g %g %g %g %g\n",p.t1,p.t2,p.t3,p.t4,p.t5,p.t6,p.t7,p.t8);
     readt = 0.;
     flagt = 0.;

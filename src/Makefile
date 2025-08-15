@@ -32,16 +32,16 @@ SRC_BFCORR    := casm_bfCorr.cu
 LIBS_BFCORR   := -lpsrdada -lcublas
 
 # --- Project 2: frb_search_pipeline ---
-# TARGET_PIPELINE := casm_hella
-# SRC_PIPELINE    := casm_hella.cu
-# DEDISP_INCLUDES := -I/usr/local/include
-# DEDISP_LIBPATHS := -L/usr/local/lib
-# LIBS_PIPELINE   := -lpsrdada -lcublas -ldedisp -lnppc -lnppi -lnpps -lcurand
+TARGET_PIPELINE := casm_hella
+SRC_PIPELINE    := casm_hella.cu
+DEDISP_INCLUDES := -I/usr/local/include
+DEDISP_LIBPATHS := -L/usr/local/lib
+LIBS_PIPELINE   := -lpsrdada -lcublas -ldedisp -lnppc -lnppi -lnpps -lcurand
 
 # --- Build Rules ---
 
 # Default: build all executables
-all: $(TARGET_BFCORR) $(TARGET_CAPTURE) $(TARGET_FAKEWRITER)
+all: $(TARGET_BFCORR) $(TARGET_PIPELINE) $(TARGET_CAPTURE) $(TARGET_FAKEWRITER)
 
 # Build casm_bfCorr
 $(TARGET_BFCORR): $(SRC_BFCORR) casm_def.h
@@ -50,11 +50,11 @@ $(TARGET_BFCORR): $(SRC_BFCORR) casm_def.h
            $(COMMON_LIBPATHS) $(LIBS_BFCORR)
 
 # Build frb_search_pipeline
-# $(TARGET_PIPELINE): $(SRC_PIPELINE) casm_def.h
-# 	@echo "--- Compiling $(TARGET_PIPELINE) ---"
-# 	$(NVCC) -o $@ $< $(COMMON_CFLAGS) $(COMMON_INCLUDES) \
-#            $(DEDISP_INCLUDES) $(COMMON_LIBPATHS) \
-#            $(DEDISP_LIBPATHS) $(LIBS_PIPELINE)
+$(TARGET_PIPELINE): $(SRC_PIPELINE) casm_def.h
+	@echo "--- Compiling $(TARGET_PIPELINE) ---"
+	$(NVCC) -o $@ $< $(COMMON_CFLAGS) $(COMMON_INCLUDES) \
+           $(DEDISP_INCLUDES) $(COMMON_LIBPATHS) \
+           $(DEDISP_LIBPATHS) $(LIBS_PIPELINE)
 
 # Build casm_capture
 $(TARGET_CAPTURE): $(SRC_CAPTURE)
@@ -73,6 +73,6 @@ $(TARGET_FAKEWRITER): $(SRC_FAKEWRITER)
 # Clean up all targets
 clean:
 	@echo "--- Cleaning up all targets ---"
-	rm -f $(TARGET_BFCORR) $(TARGET_CAPTURE) $(TARGET_FAKEWRITER)
+	rm -f $(TARGET_BFCORR) $(TARGET_PIPELINE) $(TARGET_CAPTURE) $(TARGET_FAKEWRITER)
 
 .PHONY: all clean
