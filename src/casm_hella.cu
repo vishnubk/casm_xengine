@@ -2010,7 +2010,7 @@ int main(int argc, char *argv[]) {
   unsigned char * hodata = (unsigned char *)malloc(sizeof(unsigned char)*p.NTIME*NCHAN);
   float * h_ts = (float *)malloc(sizeof(float)*p.NTIME*NBATCH);
   initialize(fconf,&p);
-  FILE *fin, *ftest;
+  FILE *fin = NULL, *ftest;
 
   // in CANDIDATE mode
   if (p.inp_format==3) {
@@ -2166,7 +2166,7 @@ int main(int argc, char *argv[]) {
     if (p.inp_format==0) 
       block = ipcio_open_block_read (hdu_in->data_block, &bytes_read, &block_id);
 
-    if (p.inp_format==2)
+    if (p.inp_format==2 && fin != NULL)
       fread(tmpbuf, sizeof(unsigned char), NBEAMS*p.gulp*NCHAN, fin);
     
     // set up logging and reset output
