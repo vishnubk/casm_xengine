@@ -27,7 +27,7 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/tuple.h>
 #include <thrust/host_vector.h>
-#include <src/sigproc.h>
+#include <sigproc.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -1922,6 +1922,30 @@ void output_peaks(pinfo *p, int samp, int restart_socket) {
 
   }
 
+}
+
+// Simple read_header function for filterbank files
+// This is a basic implementation - you may need to enhance it for your specific needs
+int read_header(FILE *fin) {
+  char line[256];
+  int header_size = 0;
+  
+  // Read header lines until we hit the end of header marker
+  while (fgets(line, sizeof(line), fin) != NULL) {
+    header_size += strlen(line);
+    
+    // Check for end of header marker (usually a line with just "HEADER_END")
+    if (strstr(line, "HEADER_END") != NULL) {
+      break;
+    }
+    
+    // Also check for other common end markers
+    if (strstr(line, "END") != NULL && strlen(line) <= 10) {
+      break;
+    }
+  }
+  
+  return header_size;
 }
 
 // deals with data IO
