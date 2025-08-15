@@ -27,7 +27,7 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/tuple.h>
 #include <thrust/host_vector.h>
-#include <sigproc.h>
+// #include <sigproc.h>  // Commented out due to missing dependencies
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -86,7 +86,14 @@ const int MAXRECV = 500;
 
 // Statistical parameters for boxcar smoothing
 #define BOXCAR_MEAN 0.21368
-#define BOXCAR_STDS {0.001309, 0.00124735, 0.00103835, 0.00081225, 0.00062605, 0.00047785, 0.00036005}
+// Individual standard deviation values for boxcar smoothing
+#define BOXCAR_STD_0 0.001309
+#define BOXCAR_STD_1 0.00124735
+#define BOXCAR_STD_2 0.00103835
+#define BOXCAR_STD_3 0.00081225
+#define BOXCAR_STD_4 0.00062605
+#define BOXCAR_STD_5 0.00047785
+#define BOXCAR_STD_6 0.00036005
 
 // Threshold parameters
 #define TIME_SERIES_HIGH_THRESHOLD 1.05
@@ -400,13 +407,13 @@ void initialize(FILE *fconf, pinfo * p) {
   p->imbox = nppiMalloc_32f_C1(p->ntime_dd,p->ndms,&(p->imbox_step));
   p->stds = (float *)malloc(sizeof(float)*p->nboxcar);
   p->mean = BOXCAR_MEAN;
-  p->stds[0] = BOXCAR_STDS[0];
-  p->stds[1] = BOXCAR_STDS[1];
-  p->stds[2] = BOXCAR_STDS[2];
-  p->stds[3] = BOXCAR_STDS[3];
-  p->stds[4] = BOXCAR_STDS[4];
-  p->stds[5] = BOXCAR_STDS[5];
-  p->stds[6] = BOXCAR_STDS[6];
+  p->stds[0] = BOXCAR_STD_0;
+  p->stds[1] = BOXCAR_STD_1;
+  p->stds[2] = BOXCAR_STD_2;
+  p->stds[3] = BOXCAR_STD_3;
+  p->stds[4] = BOXCAR_STD_4;
+  p->stds[5] = BOXCAR_STD_5;
+  p->stds[6] = BOXCAR_STD_6;
   
   // peak finding
   p->dmt.resize((p->ndms-2)*p->ntime_out);
@@ -1764,8 +1771,7 @@ void find_peaks(pinfo *p, int bm) {
 
       // Find indices and values of points greater than the threshold
       //  thrust::copy(p->dmt.begin(), p->dmt.begin() + 20, std::ostream_iterator<float>(std::cout, " "));
-      thrust::device_vector<int>::iterator end = thrust::copy_if(thrust::device,
-								 thrust::make_counting_iterator(0),
+      thrust::device_vector<int>::iterator end = thrust::copy_if(thrust::make_counting_iterator(0),
 								 thrust::make_counting_iterator(p->ntime_out*(p->ndms-2)),
 								 p->dmt.begin(),
 								 p->output_indices.begin(),
@@ -2118,7 +2124,7 @@ int main(int argc, char *argv[]) {
     int nbytes_header = read_header(fin);
     fclose(fin);
     char * heade = (char *)malloc(sizeof(char)*nbytes_header);
-    (fin)=fopen(p.inp_path,"rb");
+    fin=fopen(p.inp_path,"rb");
     fread(heade, sizeof(char), nbytes_header, fin);
     free(heade);
     syslog(LOG_INFO,"Finished with header (nbytes %d) of input filFile %s\n",nbytes_header,p.inp_path);
