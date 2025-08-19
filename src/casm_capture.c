@@ -728,6 +728,14 @@ int main (int argc, char *argv[]) {
   //  print_dada_header_template(dada_fnam);
   // START THREADS
   
+  // initialize the data structure BEFORE starting threads that read it
+  syslog (LOG_INFO, "main: dsaX_udpdb_init_receiver()");
+  if (dsaX_udpdb_init_receiver (&udpdb) < 0)
+  {
+    syslog (LOG_ERR, "could not initialize receiver");
+    return EXIT_FAILURE;
+  }
+  
   // start control thread
   int rval = 0;
   pthread_t control_thread_id, stats_thread_id;
@@ -757,14 +765,6 @@ int main (int argc, char *argv[]) {
       syslog(LOG_NOTICE,"bound to core %d", core);
     }
 
-  // initialize the data structure
-  syslog (LOG_INFO, "main: dsaX_udpdb_init_receiver()");
-  if (dsaX_udpdb_init_receiver (&udpdb) < 0)
-  {
-    syslog (LOG_ERR, "could not initialize receiver");
-    return EXIT_FAILURE;
-  }
-  
   // OPEN CONNECTION TO DADA DB FOR WRITING
 
   if (DEBUG) syslog(LOG_INFO,"Creating HDU");
@@ -842,7 +842,8 @@ int main (int argc, char *argv[]) {
   udpdb.num_inputs = NSNAPS;
   udpdb.verbose = 0;
 
-  udpdb.log = (void*)1; 
+  // provide valid logger to PSRDADA helpers
+  udpdb.log = log; 
 
   // determine number of packets per block, must 
   if (udpdb.hdu_bufsz % UDP_DATA != 0)

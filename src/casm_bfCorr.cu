@@ -821,7 +821,6 @@ __global__ void sum_ib(half * dra, half * dia, half * drb, half * dib, half * do
   
 }
 
-
 /*
 Beamformer (Single Array):
  - initial data is [NPACKETS_PER_BLOCK, NANTS, NCHAN_PER_PACKET, 2 times, 2 pol, 4-bit complex] 
