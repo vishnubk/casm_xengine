@@ -33,6 +33,7 @@ control_thread: deals with control commands
 #include <sys/select.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <strings.h>
 
 #include "sock.h"
 #include "tmutil.h"
@@ -126,7 +127,7 @@ dsaX_sock_t * dsaX_init_sock ()
   assert(b->buf != NULL);
 
   b->have_packet = 0;
-  b->fd = 0;
+  b->fd = -1;  // Initialize to -1 so socket creation logic will run
 
   return b;
 }
@@ -211,35 +212,50 @@ int dsaX_udpdb_prepare(udpdb_t * ctx)
   syslog(LOG_INFO, "Attempting to create UDP socket on interface %s, port %d", ctx->interface, ctx->port);
   syslog(LOG_INFO, "dsaX_udpdb_prepare: ctx=%p, ctx->sock=%p", (void*)ctx, (void*)ctx->sock);
   ctx->verbose = 0;
-  if (ctx->sock->fd < 0) {
-    int saved_errno = errno;
-    syslog (LOG_ERR, "Error, Failed to create udp socket on %s:%d: %s", ctx->interface, ctx->port, strerror(saved_errno));
-    if (saved_errno == EADDRNOTAVAIL) {
-      syslog (LOG_ERR, "The address %s is not assigned on this host. Falling back to 0.0.0.0 (all interfaces).", ctx->interface);
-      syslog(LOG_INFO, "About to call dada_udp_sock_in with log=%p, interface=%s, port=%d", ctx->log, ctx->interface, ctx->port);
-      ctx->sock->fd = socket(AF_INET, SOCK_DGRAM, 0);
-      if (ctx->sock->fd >= 0) {
-        struct sockaddr_in addr;
-        memset(&addr, 0, sizeof(addr));
-        addr.sin_family = AF_INET;
-        addr.sin_port = htons(ctx->port);
-        addr.sin_addr.s_addr = htonl(INADDR_ANY); // 0.0.0.0
-        
-        if (bind(ctx->sock->fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-          syslog(LOG_ERR, "bind failed: %s", strerror(errno));
-          close(ctx->sock->fd);
-          ctx->sock->fd = -1;
-        } else {
-          syslog(LOG_INFO, "Native socket created and bound successfully on FD: %d", ctx->sock->fd);
-        }
-      }
-    }
+  
+  // Create socket if it doesn't exist or is invalid
+  if (ctx->sock->fd <= 0) {
+    syslog(LOG_INFO, "Creating new UDP socket...");
+    ctx->sock->fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (ctx->sock->fd < 0) {
-      if (saved_errno == EADDRINUSE) {
-        syslog(LOG_ERR, "Port %d already in use. Choose another -p or stop the conflicting process.", ctx->port);
-      }
+      syslog(LOG_ERR, "Failed to create socket: %s", strerror(errno));
       return -1;
     }
+    
+    // Set socket options
+    int opt = 1;
+    if (setsockopt(ctx->sock->fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+      syslog(LOG_WARNING, "Failed to set SO_REUSEADDR: %s", strerror(errno));
+    }
+    
+    // Bind socket
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(ctx->port);
+    
+    // Handle interface binding
+    if (strcmp(ctx->interface, "0.0.0.0") == 0 || strcmp(ctx->interface, "INADDR_ANY") == 0) {
+      addr.sin_addr.s_addr = htonl(INADDR_ANY); // Bind to all interfaces
+      syslog(LOG_INFO, "Binding to all interfaces (INADDR_ANY)");
+    } else {
+      // Try to bind to specific interface
+      if (inet_pton(AF_INET, ctx->interface, &addr.sin_addr) != 1) {
+        syslog(LOG_ERR, "Invalid interface address: %s", ctx->interface);
+        close(ctx->sock->fd);
+        ctx->sock->fd = -1;
+        return -1;
+      }
+    }
+    
+    if (bind(ctx->sock->fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+      syslog(LOG_ERR, "bind failed: %s", strerror(errno));
+      close(ctx->sock->fd);
+      ctx->sock->fd = -1;
+      return -1;
+    }
+    
+    syslog(LOG_INFO, "Socket created and bound successfully on FD: %d", ctx->sock->fd);
   }
   
   // set the socket size to 256 MB
@@ -396,6 +412,7 @@ int dsaX_udpdb_destroy_receiver (udpdb_t * ctx)
   if (ctx->sock)
     dsaX_free_sock(ctx->sock);
   ctx->sock = 0;
+  return 0;
 }
 
 /*
