@@ -214,11 +214,12 @@ int dsaX_udpdb_prepare(udpdb_t * ctx)
   // set the socket size to 256 MB
   int sock_buf_size = 256*1024*1024;
   syslog(LOG_INFO, "prepare: setting buffer size to %d", sock_buf_size);
-  dada_udp_sock_set_buffer_size (ctx->log, ctx->sock->fd, ctx->verbose, sock_buf_size);
+  // dada_udp_sock_set_buffer_size (ctx->log, ctx->sock->fd, ctx->verbose, sock_buf_size);
+  syslog(LOG_INFO, "Socket created with FD: %d", ctx->sock->fd);
 
   // set the socket to non-blocking
   syslog(LOG_INFO, "prepare: setting non_block");
-  sock_nonblock(ctx->sock->fd);
+  // sock_nonblock(ctx->sock->fd);
 
   // clear any packets buffered by the kernel
   syslog(LOG_INFO, "prepare: clearing packets at socket");
