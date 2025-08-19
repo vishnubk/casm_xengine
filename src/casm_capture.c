@@ -195,10 +195,19 @@ int dsaX_udpdb_prepare(udpdb_t * ctx)
   syslog(LOG_INFO, "Attempting to create UDP socket on interface %s, port %d", ctx->interface, ctx->port);
   syslog(LOG_INFO, "dsaX_udpdb_prepare: ctx=%p, ctx->sock=%p", (void*)ctx, (void*)ctx->sock);
   ctx->verbose = 0;
-  ctx->sock->fd = dada_udp_sock_in(ctx->log, ctx->interface, ctx->port, ctx->verbose);
   if (ctx->sock->fd < 0) {
-    syslog (LOG_ERR, "Error, Failed to create udp socket");
-    return -1;
+    int saved_errno = errno;
+    syslog (LOG_ERR, "Error, Failed to create udp socket on %s:%d: %s", ctx->interface, ctx->port, strerror(saved_errno));
+    if (saved_errno == EADDRNOTAVAIL) {
+      syslog (LOG_ERR, "The address %s is not assigned on this host. Falling back to 0.0.0.0 (all interfaces).", ctx->interface);
+      ctx->sock->fd = dada_udp_sock_in(ctx->log, "0.0.0.0", ctx->port, ctx->verbose);
+    }
+    if (ctx->sock->fd < 0) {
+      if (saved_errno == EADDRINUSE) {
+        syslog(LOG_ERR, "Port %d already in use. Choose another -p or stop the conflicting process.", ctx->port);
+      }
+      return -1;
+    }
   }
   
   // set the socket size to 256 MB
@@ -933,7 +942,7 @@ int main (int argc, char *argv[]) {
 	  got = recvfrom ( udpdb.sock->fd, udpdb.sock->buf, UDP_PAYLOAD, 0, NULL, NULL );
 
 	  //log_packet_details(udpdb.sock->buf, got);
-	  syslog(LOG_INFO, "Received packet of size %zd", got);
+	  //syslog(LOG_INFO, "Received packet of size %zd", got);
 	  
 	  if (got == UDP_PAYLOAD) 
 	    {
