@@ -202,7 +202,7 @@ int dsaX_udpdb_prepare(udpdb_t * ctx)
   }
   
   // set the socket size to 256 MB
-  int sock_buf_size = 4*1024*1024;
+  int sock_buf_size = 256*1024*1024;
   syslog(LOG_INFO, "prepare: setting buffer size to %d", sock_buf_size);
   dada_udp_sock_set_buffer_size (ctx->log, ctx->sock->fd, ctx->verbose, sock_buf_size);
 
@@ -960,7 +960,7 @@ int main (int argc, char *argv[]) {
 	  uint64_t seq_no = details.timestamp;
 	  uint16_t aid = details.chan0/512;  // This will give values 0,1,2,3,4,5
     
-	  if (UTC_START == 0) UTC_START = details.timestamp + 10000;
+	  if (UTC_START == 0) UTC_START = details.timestamp;
  
 	  //	  syslog(LOG_INFO, "Packet Details: seq=%lu, chan0=%u, board_id=%u, n_chans=%u, aid=%u",
 	  //	 seq_no, details.chan0, details.board_id, details.n_chans, aid);
@@ -986,12 +986,12 @@ int main (int argc, char *argv[]) {
 	  uint64_t seq_no = details.timestamp;
 	  uint16_t aid = details.chan0/512;  // This will give values 0,1,2,3,4,5
 	  
-	  if (UTC_START == 0) UTC_START = details.timestamp + 10000;
+	  if (UTC_START == 0) UTC_START = details.timestamp;
 
 	  // You can also log the details if needed
 	  
 
-	  if (UTC_START==0) UTC_START = seq_no + 10000;
+	  if (UTC_START==0) UTC_START = seq_no;
 	  
 	  //act_seq_no = seq_no*NCHANG*NSNAPS/2 + ant_id*NCHANG/3 + (ch_id-CHOFF)/384; // actual seq no
 	  act_seq_no = NCHANG*seq_no + aid; // actual seq no
@@ -1012,7 +1012,7 @@ int main (int argc, char *argv[]) {
 	  //}
 	  // check for starting or stopping condition, using continue
 	  if (canWrite==0) {
-	    if (seq_no >= UTC_START-50 && UTC_START != 10000) {
+	    if (seq_no >= UTC_START) {
 	      canWrite=1;	      
 	    }
 	  }
