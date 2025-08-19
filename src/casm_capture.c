@@ -28,6 +28,11 @@ control_thread: deals with control commands
 #include <sys/socket.h>
 #include <syslog.h>
 #include <multilog.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <sys/select.h>
+#include <fcntl.h>
+#include <errno.h>
 
 #include "sock.h"
 #include "tmutil.h"
@@ -74,6 +79,12 @@ int dPort = CAPTURE_PORT;
 
 void dsaX_dbgpu_cleanup (dada_hdu_t * out);
 int dada_bind_thread_to_core (int core);
+
+// Function declarations for socket diagnostics
+int check_socket_status(int sock_fd);
+int check_network_interface(const char* interface);
+int check_socket_data_available(int sock_fd);
+void print_socket_diagnostics(int sock_fd, const char* interface, int port);
 
 void dsaX_dbgpu_cleanup (dada_hdu_t * out)
 {
@@ -701,6 +712,108 @@ int check_network_interface(const char* interface) {
     return 0;
 }
 
+/*
+ * Check if there's any data available on the socket
+ */
+int check_socket_data_available(int sock_fd) {
+    if (sock_fd < 0) {
+        return -1;
+    }
+    
+    fd_set read_fds;
+    struct timeval timeout;
+    
+    FD_ZERO(&read_fds);
+    FD_SET(sock_fd, &read_fds);
+    
+    // Set timeout to 0 for non-blocking check
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 0;
+    
+    int result = select(sock_fd + 1, &read_fds, NULL, NULL, &timeout);
+    
+    if (result < 0) {
+        syslog(LOG_ERR, "select() failed: %s", strerror(errno));
+        return -1;
+    } else if (result == 0) {
+        syslog(LOG_INFO, "No data available on socket (timeout)");
+        return 0;
+    } else {
+        if (FD_ISSET(sock_fd, &read_fds)) {
+            syslog(LOG_INFO, "Data is available on socket");
+            return 1;
+        }
+    }
+    
+    return 0;
+}
+
+/*
+ * Comprehensive socket diagnostic function
+ */
+void print_socket_diagnostics(int sock_fd, const char* interface, int port) {
+    syslog(LOG_INFO, "=== SOCKET DIAGNOSTICS ===");
+    
+    // Basic socket info
+    if (sock_fd < 0) {
+        syslog(LOG_ERR, "Socket file descriptor: INVALID (%d)", sock_fd);
+        return;
+    } else {
+        syslog(LOG_INFO, "Socket file descriptor: %d", sock_fd);
+    }
+    
+    // Check socket status
+    if (check_socket_status(sock_fd) < 0) {
+        syslog(LOG_ERR, "Socket health check: FAILED");
+    } else {
+        syslog(LOG_INFO, "Socket health check: PASSED");
+    }
+    
+    // Check network interface
+    if (check_network_interface(interface) < 0) {
+        syslog(LOG_ERR, "Network interface check: FAILED");
+    } else {
+        syslog(LOG_INFO, "Network interface check: PASSED");
+    }
+    
+    // Check if data is available
+    int data_status = check_socket_data_available(sock_fd);
+    if (data_status < 0) {
+        syslog(LOG_ERR, "Data availability check: FAILED");
+    } else if (data_status == 0) {
+        syslog(LOG_INFO, "Data availability check: NO DATA");
+    } else {
+        syslog(LOG_INFO, "Data availability check: DATA AVAILABLE");
+    }
+    
+    // Socket options
+    int recv_buf_size = 0;
+    socklen_t optlen = sizeof(recv_buf_size);
+    if (getsockopt(sock_fd, SOL_SOCKET, SO_RCVBUF, &recv_buf_size, &optlen) == 0) {
+        syslog(LOG_INFO, "Receive buffer size: %d bytes", recv_buf_size);
+    }
+    
+    int send_buf_size = 0;
+    optlen = sizeof(send_buf_size);
+    if (getsockopt(sock_fd, SOL_SOCKET, SO_SNDBUF, &send_buf_size, &optlen) == 0) {
+        syslog(LOG_INFO, "Send buffer size: %d bytes", send_buf_size);
+    }
+    
+    // Check if socket is non-blocking
+    int flags = fcntl(sock_fd, F_GETFL, 0);
+    if (flags < 0) {
+        syslog(LOG_ERR, "Cannot get socket flags");
+    } else {
+        if (flags & O_NONBLOCK) {
+            syslog(LOG_INFO, "Socket mode: NON-BLOCKING");
+        } else {
+            syslog(LOG_INFO, "Socket mode: BLOCKING");
+        }
+    }
+    
+    syslog(LOG_INFO, "=== END DIAGNOSTICS ===");
+}
+
 // MAIN of program
 	
 int main (int argc, char *argv[]) {
@@ -967,6 +1080,11 @@ int main (int argc, char *argv[]) {
     syslog(LOG_ERR, "could allocate required resources (prepare)");
     return EXIT_FAILURE;
   }
+  
+  // Run comprehensive socket diagnostics after preparation
+  syslog(LOG_INFO, "Running initial socket diagnostics...");
+  print_socket_diagnostics(udpdb.sock->fd, udpdb.interface, udpdb.port);
+  
   syslog(LOG_INFO, "Test");  
   // reset the receiver
   syslog(LOG_INFO, "main: dsaX_udpdb_reset_receiver()");
@@ -1024,8 +1142,31 @@ int main (int argc, char *argv[]) {
   // use stats thread to monitor STATE at this stage, to save resources here
 
   syslog(LOG_INFO, "Starting infinite loop");
+  
+  // Socket health check counter
+  static int check_counter = 0;
+  
   while (1)
     {
+      // Periodic socket health check every 1000 iterations
+      check_counter++;
+      if (check_counter % 1000 == 0) {
+        if (check_socket_status(udpdb.sock->fd) < 0) {
+          syslog(LOG_ERR, "Socket health check failed, running diagnostics...");
+          print_socket_diagnostics(udpdb.sock->fd, udpdb.interface, udpdb.port);
+          
+          syslog(LOG_ERR, "Re-preparing socket...");
+          // Re-prepare the socket
+          if (dsaX_udpdb_prepare(&udpdb) < 0) {
+            syslog(LOG_ERR, "Failed to re-prepare socket");
+            return EXIT_FAILURE;
+          }
+          
+          // Run diagnostics again after re-preparation
+          syslog(LOG_INFO, "Running diagnostics after socket re-preparation...");
+          print_socket_diagnostics(udpdb.sock->fd, udpdb.interface, udpdb.port);
+        }
+      }
 
       udpdb.sock->have_packet = 0; 
 
@@ -1057,22 +1198,8 @@ int main (int argc, char *argv[]) {
 	      else 
 		{
 		  syslog (LOG_ERR, "receive_obs: recvfrom failed %s", strerror(errsv));
-          // decode packet header (64 bits)                                                                                                                                         
-          // 35 bits seq_no (for first spectrum in packet); 13 bits ch_id (for first channel in packet); 16 bits ant ID (for first antenna in packet)
-
-	  PacketDetails details = extract_packet_details(udpdb.sock->buf, got);
-
-	  // Now you can use the extracted values
-	  uint64_t seq_no = details.timestamp;
-	  uint16_t aid = details.chan0/512;  // This will give values 0,1,2,3,4,5
-    
-	  if (UTC_START == 0) UTC_START = details.timestamp;
- 
-	  //	  syslog(LOG_INFO, "Packet Details: seq=%lu, chan0=%u, board_id=%u, n_chans=%u, aid=%u",
-	  //	 seq_no, details.chan0, details.board_id, details.n_chans, aid);
-
-          if (UTC_START==0) UTC_START = seq_no + 10000;
-
+		  // Log additional socket diagnostics
+		  check_socket_status(udpdb.sock->fd);
 		  return EXIT_FAILURE;
 		}
 	    } 
