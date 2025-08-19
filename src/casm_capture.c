@@ -200,7 +200,8 @@ int dsaX_udpdb_prepare(udpdb_t * ctx)
     syslog (LOG_ERR, "Error, Failed to create udp socket on %s:%d: %s", ctx->interface, ctx->port, strerror(saved_errno));
     if (saved_errno == EADDRNOTAVAIL) {
       syslog (LOG_ERR, "The address %s is not assigned on this host. Falling back to 0.0.0.0 (all interfaces).", ctx->interface);
-      ctx->sock->fd = dada_udp_sock_in(ctx->log, "0.0.0.0", ctx->port, ctx->verbose);
+      syslog(LOG_INFO, "About to call dada_udp_sock_in with log=%p, interface=%s, port=%d", ctx->log, ctx->interface, ctx->port);
+      ctx->sock->fd = dada_udp_sock_in(ctx->log, ctx->interface, ctx->port, ctx->verbose);
     }
     if (ctx->sock->fd < 0) {
       if (saved_errno == EADDRINUSE) {
