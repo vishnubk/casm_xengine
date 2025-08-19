@@ -201,7 +201,22 @@ int dsaX_udpdb_prepare(udpdb_t * ctx)
     if (saved_errno == EADDRNOTAVAIL) {
       syslog (LOG_ERR, "The address %s is not assigned on this host. Falling back to 0.0.0.0 (all interfaces).", ctx->interface);
       syslog(LOG_INFO, "About to call dada_udp_sock_in with log=%p, interface=%s, port=%d", ctx->log, ctx->interface, ctx->port);
-      ctx->sock->fd = dada_udp_sock_in(ctx->log, ctx->interface, ctx->port, ctx->verbose);
+      ctx->sock->fd = socket(AF_INET, SOCK_DGRAM, 0);
+      if (ctx->sock->fd >= 0) {
+        struct sockaddr_in addr;
+        memset(&addr, 0, sizeof(addr));
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(ctx->port);
+        addr.sin_addr.s_addr = htonl(INADDR_ANY); // 0.0.0.0
+        
+        if (bind(ctx->sock->fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+          syslog(LOG_ERR, "bind failed: %s", strerror(errno));
+          close(ctx->sock->fd);
+          ctx->sock->fd = -1;
+        } else {
+          syslog(LOG_INFO, "Native socket created and bound successfully on FD: %d", ctx->sock->fd);
+        }
+      }
     }
     if (ctx->sock->fd < 0) {
       if (saved_errno == EADDRINUSE) {
