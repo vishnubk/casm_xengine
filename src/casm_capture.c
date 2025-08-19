@@ -190,6 +190,11 @@ int dsaX_udpdb_prepare(udpdb_t * ctx)
 {
   syslog(LOG_INFO, "dsaX_udpdb_prepare()");
 
+  // Check network interface status first
+  if (check_network_interface(ctx->interface) < 0) {
+    syslog(LOG_WARNING, "Network interface check failed for %s, but continuing...", ctx->interface);
+  }
+
   // open socket
   syslog(LOG_INFO, "prepare: creating udp socket on %s:%d", ctx->interface, ctx->port);
   syslog(LOG_INFO, "Attempting to create UDP socket on interface %s, port %d", ctx->interface, ctx->port);
@@ -622,6 +627,80 @@ void log_packet_details(const unsigned char* buffer, size_t size) {
     syslog(LOG_INFO, "Packet Details: size=%zu, timestamp=%lu, chan0=%u, board_id=%u, n_chans=%u, n_antpols=%u",
            size, be64toh(timestamp), ntohs(chan0), ntohs(board_id), ntohs(n_chans), ntohs(n_antpols));
 }
+
+/*
+ * Check if socket is still valid and healthy
+ */
+int check_socket_status(int sock_fd) {
+    if (sock_fd < 0) {
+        syslog(LOG_ERR, "Socket file descriptor is invalid: %d", sock_fd);
+        return -1;
+    }
+    
+    // Check if socket is still valid
+    int error = 0;
+    socklen_t len = sizeof(error);
+    int retval = getsockopt(sock_fd, SOL_SOCKET, SO_ERROR, &error, &len);
+    
+    if (retval != 0) {
+        syslog(LOG_ERR, "getsockopt failed: %s", strerror(errno));
+        return -1;
+    }
+    
+    if (error != 0) {
+        syslog(LOG_ERR, "Socket error: %s", strerror(error));
+        return -1;
+    }
+    
+    // Check socket buffer info
+    int recv_buf_size = 0;
+    socklen_t optlen = sizeof(recv_buf_size);
+    if (getsockopt(sock_fd, SOL_SOCKET, SO_RCVBUF, &recv_buf_size, &optlen) == 0) {
+        syslog(LOG_INFO, "Socket receive buffer size: %d bytes", recv_buf_size);
+    }
+    
+    syslog(LOG_INFO, "Socket status: OK");
+    return 0;
+}
+
+/*
+ * Check if network interface exists and is working
+ */
+int check_network_interface(const char* interface) {
+    struct ifreq ifr;
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    
+    if (sock < 0) {
+        syslog(LOG_ERR, "Cannot create socket for interface check");
+        return -1;
+    }
+    
+    strncpy(ifr.ifr_name, interface, IFNAMSIZ-1);
+    
+    // Check if interface exists and is up
+    if (ioctl(sock, SIOCGIFFLAGS, &ifr) < 0) {
+        syslog(LOG_ERR, "Interface %s not found", interface);
+        close(sock);
+        return -1;
+    }
+    
+    if (!(ifr.ifr_flags & IFF_UP)) {
+        syslog(LOG_ERR, "Interface %s is down", interface);
+        close(sock);
+        return -1;
+    }
+    
+    if (!(ifr.ifr_flags & IFF_RUNNING)) {
+        syslog(LOG_ERR, "Interface %s is not running", interface);
+        close(sock);
+        return -1;
+    }
+    
+    syslog(LOG_INFO, "Interface %s is up and running", interface);
+    close(sock);
+    return 0;
+}
+
 // MAIN of program
 	
 int main (int argc, char *argv[]) {
@@ -943,7 +1022,6 @@ int main (int argc, char *argv[]) {
 
   // infinite loop to receive packets
   // use stats thread to monitor STATE at this stage, to save resources here
-
 
   syslog(LOG_INFO, "Starting infinite loop");
   while (1)
