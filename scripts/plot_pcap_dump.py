@@ -42,7 +42,7 @@ def main(pcap_file, max_packets=1000, chan0=0, total_chans=3072, adc_sample_rate
     Accumulate and plot average spectra for all 12 ADCs.
     """
     freq0 = 375e6
-    chan_width_hz = 2 * adc_sample_rate / 4096
+    chan_width_hz = adc_sample_rate / 4096 / 2.0
     freq_axis_mhz = (freq0 + (chan0 + np.arange(total_chans)) * chan_width_hz) / 1e6
 
     spectra_sum = defaultdict(lambda: np.zeros(total_chans, dtype=np.float32))
