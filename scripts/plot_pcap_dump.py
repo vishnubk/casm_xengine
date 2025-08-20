@@ -65,6 +65,8 @@ def main(pcap_file, max_packets=1000):
         axs[adc].set_title(f"ADC {adc}")
         axs[adc].set_ylabel("Power")
         axs[adc].grid(True)
+        # Now we will make it semilogy()
+        axs[adc].semilogy(freq_axis_mhz, avg_spectrum)
 
     axs[-1].set_xlabel("Frequency [MHz]")
 
