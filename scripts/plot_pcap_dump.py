@@ -80,6 +80,7 @@ def main(pcap_file, max_packets=1000, chan0=0, total_chans=3072, adc_sample_rate
         axs[adc].set_title(f"ADC {adc}")
         axs[adc].set_ylabel("Power")
         axs[adc].grid(True)
+        axs[adc].semilogy()
 
     axs[-1].set_xlabel("Frequency [MHz]")
     plt.suptitle(f"Average Spectrum (chan0={chan0}, {total_chans} channels, max_pkts={max_packets})")
