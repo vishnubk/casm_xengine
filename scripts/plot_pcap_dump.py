@@ -54,8 +54,8 @@ def main(pcap_file, max_packets=1000):
     axs = axs.flatten()
 
     # Frequency axis: MHz
-    chan_width_hz = 250e6 / 4096  # = ~61.035 Hz
-    freq_axis_mhz = np.arange(3072) * chan_width_hz / 1e6  # in MHz
+    chan_width_hz = 125e6 / 4096  # = ~61.035 Hz
+    freq_axis_mhz = 375 + np.arange(3072) * chan_width_hz / 1e6  # in MHz
 
     for adc in range(12):
         if counts[adc] == 0:
