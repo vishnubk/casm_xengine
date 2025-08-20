@@ -4,6 +4,7 @@ import struct
 from collections import defaultdict
 import matplotlib.pyplot as plt
 from scapy.all import PcapReader, UDP
+import argparse
 
 def decode_samples(payload, n=6144):
     """Decode interleaved 4-bit complex samples."""
@@ -28,23 +29,25 @@ def read_casm_pcap(pcap_file):
                 payload = raw[16:]
                 yield capture_ts, pkt_ts, chan0, board_id, n_chans, n_antpols, payload
 
-def main(pcap_file):
+def main(pcap_file, max_packets=1000):
     spectra_sum = defaultdict(lambda: np.zeros(3072, dtype=np.float32))
     counts = defaultdict(int)
 
+    pkt_count = 0
     for cap_ts, pkt_ts, chan0, board_id, n_chans, n_antpols, payload in read_casm_pcap(pcap_file):
         samples = decode_samples(payload)
-        total_chans = n_chans * n_antpols  # usually 3072 = 256 * 12
+        total_chans = n_chans * n_antpols
         if len(samples) != total_chans:
             continue
 
-        # Reshape to shape (n_chans, n_antpols) = (3072, 12)
         spectrum = np.abs(samples).reshape((n_chans, n_antpols))
-
-        # Accumulate per ADC
         for adc in range(n_antpols):
             spectra_sum[adc][chan0:chan0 + n_chans] += spectrum[:, adc]
             counts[adc] += 1
+
+        pkt_count += 1
+        if pkt_count >= max_packets:
+            break
 
     # Plotting
     fig, axs = plt.subplots(6, 2, figsize=(14, 12), sharex=True)
@@ -65,4 +68,9 @@ def main(pcap_file):
     plt.show()
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    parser = argparse.ArgumentParser()
+    parser.add_argument("pcap_file", help="Path to .pcap file")
+    parser.add_argument("--max-pkts", type=int, default=1000, help="Maximum number of packets to process")
+    args = parser.parse_args()
+
+    main(args.pcap_file, max_packets=args.max_pkts)
