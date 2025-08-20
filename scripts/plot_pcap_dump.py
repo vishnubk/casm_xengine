@@ -53,14 +53,20 @@ def main(pcap_file, max_packets=1000):
     fig, axs = plt.subplots(6, 2, figsize=(14, 12), sharex=True)
     axs = axs.flatten()
 
+    # Frequency axis: MHz
+    chan_width_hz = 250e6 / 4096  # = ~61.035 Hz
+    freq_axis_mhz = np.arange(3072) * chan_width_hz / 1e6  # in MHz
+
     for adc in range(12):
         if counts[adc] == 0:
             continue
         avg_spectrum = spectra_sum[adc] / counts[adc]
-        axs[adc].plot(avg_spectrum)
+        axs[adc].plot(freq_axis_mhz, avg_spectrum)
         axs[adc].set_title(f"ADC {adc}")
         axs[adc].set_ylabel("Power")
         axs[adc].grid(True)
+
+    axs[-1].set_xlabel("Frequency [MHz]")
 
     axs[-1].set_xlabel("Channel Index")
     plt.suptitle("Average Spectrum for Each ADC (12x 3072 channels)")
