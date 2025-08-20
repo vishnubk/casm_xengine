@@ -1,24 +1,32 @@
 import sys
+import argparse
 import numpy as np
 import struct
 from collections import defaultdict
 import matplotlib.pyplot as plt
 from scapy.all import PcapReader, UDP
-import argparse
 
 def decode_samples(payload, n=6144):
-    """Decode interleaved 4-bit complex samples."""
+    """
+    Decode the first n bytes of payload into signed 4-bit real/imag samples.
+    Returns a NumPy array of complex values.
+    """
     samples = []
     for i, b in enumerate(payload[:n]):
         real = (b >> 4) & 0xF
         imag = b & 0xF
-        real = real - 0x10 if real & 0x8 else real
-        imag = imag - 0x10 if imag & 0x8 else imag
+        if real & 0x8:
+            real -= 0x10
+        if imag & 0x8:
+            imag -= 0x10
         samples.append(complex(real, imag))
     return np.array(samples, dtype=np.complex64)
 
 def read_casm_pcap(pcap_file):
-    """Yield packets from a CASM F-engine PCAP."""
+    """
+    Stream a .pcap from the CASM F-engine and yield:
+      (capture_ts, pkt_ts, chan0, board_id, n_chans, n_antpols, payload_bytes)
+    """
     with PcapReader(pcap_file) as pcap:
         for pkt in pcap:
             if UDP in pkt:
@@ -29,20 +37,30 @@ def read_casm_pcap(pcap_file):
                 payload = raw[16:]
                 yield capture_ts, pkt_ts, chan0, board_id, n_chans, n_antpols, payload
 
-def main(pcap_file, max_packets=1000):
-    spectra_sum = defaultdict(lambda: np.zeros(3072, dtype=np.float32))
+def main(pcap_file, max_packets=1000, chan0=0, total_chans=3072, adc_sample_rate=250e6):
+    """
+    Accumulate and plot average spectra for all 12 ADCs.
+    """
+    chan_width_hz = adc_sample_rate / 4096
+    freq_axis_mhz = (chan0 + np.arange(total_chans)) * chan_width_hz / 1e6
+
+    spectra_sum = defaultdict(lambda: np.zeros(total_chans, dtype=np.float32))
     counts = defaultdict(int)
 
     pkt_count = 0
-    for cap_ts, pkt_ts, chan0, board_id, n_chans, n_antpols, payload in read_casm_pcap(pcap_file):
+    for cap_ts, pkt_ts, pkt_chan0, board_id, n_chans, n_antpols, payload in read_casm_pcap(pcap_file):
+        # Skip packets outside desired frequency range
+        if pkt_chan0 < chan0 or pkt_chan0 + n_chans > chan0 + total_chans:
+            continue
+
+        offset = pkt_chan0 - chan0
         samples = decode_samples(payload)
-        total_chans = n_chans * n_antpols
-        if len(samples) != total_chans:
+        if len(samples) != n_chans * n_antpols:
             continue
 
         spectrum = np.abs(samples).reshape((n_chans, n_antpols))
         for adc in range(n_antpols):
-            spectra_sum[adc][chan0:chan0 + n_chans] += spectrum[:, adc]
+            spectra_sum[adc][offset:offset + n_chans] += spectrum[:, adc]
             counts[adc] += 1
 
         pkt_count += 1
@@ -53,10 +71,6 @@ def main(pcap_file, max_packets=1000):
     fig, axs = plt.subplots(6, 2, figsize=(14, 12), sharex=True)
     axs = axs.flatten()
 
-    # Frequency axis: MHz
-    chan_width_hz = 125e6 / 4096  # = ~61.035 Hz
-    freq_axis_mhz = 375 + np.arange(3072) * chan_width_hz / 1e6  # in MHz
-
     for adc in range(12):
         if counts[adc] == 0:
             continue
@@ -65,20 +79,18 @@ def main(pcap_file, max_packets=1000):
         axs[adc].set_title(f"ADC {adc}")
         axs[adc].set_ylabel("Power")
         axs[adc].grid(True)
-        # Now we will make it semilogy()
-        axs[adc].semilogy(freq_axis_mhz, avg_spectrum)
 
     axs[-1].set_xlabel("Frequency [MHz]")
-
-    axs[-1].set_xlabel("Channel Index")
-    plt.suptitle("Average Spectrum for Each ADC (12x 3072 channels)")
+    plt.suptitle(f"Average Spectrum (chan0={chan0}, {total_chans} channels, max_pkts={max_packets})")
     plt.tight_layout()
     plt.show()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("pcap_file", help="Path to .pcap file")
-    parser.add_argument("--max-pkts", type=int, default=1000, help="Maximum number of packets to process")
+    parser = argparse.ArgumentParser(description="Plot time-averaged spectra from CASM F-engine PCAP.")
+    parser.add_argument("pcap_file", help="Path to PCAP file")
+    parser.add_argument("--max-pkts", type=int, default=1000, help="Max number of packets to process")
+    parser.add_argument("--chan0", type=int, default=0, help="Starting frequency channel (default: 0)")
+    parser.add_argument("--nchans", type=int, default=3072, help="Number of channels to plot (default: 3072)")
     args = parser.parse_args()
 
-    main(args.pcap_file, max_packets=args.max_pkts)
+    main(args.pcap_file, max_packets=args.max_pkts, chan0=args.chan0, total_chans=args.nchans)
