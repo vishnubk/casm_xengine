@@ -1195,7 +1195,7 @@ int main (int argc, char *argv[]) {
 	  got = recvfrom ( udpdb.sock->fd, udpdb.sock->buf, UDP_PAYLOAD, 0, NULL, NULL );
 
 	  //log_packet_details(udpdb.sock->buf, got);
-	  //syslog(LOG_INFO, "Received packet of size %zd", got);
+	  syslog(LOG_INFO, "Received packet of size %zd", got);
 	  
 	  if (got == UDP_PAYLOAD) 
 	    {
@@ -1240,7 +1240,6 @@ int main (int argc, char *argv[]) {
 
 	  // You can also log the details if needed
 	  
-
 	  if (UTC_START==0) UTC_START = seq_no;
 	  
 	  //act_seq_no = seq_no*NCHANG*NSNAPS/2 + ant_id*NCHANG/3 + (ch_id-CHOFF)/384; // actual seq no
