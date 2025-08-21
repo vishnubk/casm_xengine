@@ -258,8 +258,8 @@ int dsaX_udpdb_prepare(udpdb_t * ctx)
     syslog(LOG_INFO, "Socket created and bound successfully on FD: %d", ctx->sock->fd);
   }
   
-  // set the socket size to 256 MB
-  int sock_buf_size = 256*1024*1024;
+  // set the socket size to 64 MB
+  int sock_buf_size = 64*1024*1024;
   syslog(LOG_INFO, "prepare: setting buffer size to %d", sock_buf_size);
   // dada_udp_sock_set_buffer_size (ctx->log, ctx->sock->fd, ctx->verbose, sock_buf_size);
   syslog(LOG_INFO, "Socket created with FD: %d", ctx->sock->fd);
@@ -271,6 +271,7 @@ int dsaX_udpdb_prepare(udpdb_t * ctx)
   // clear any packets buffered by the kernel
   syslog(LOG_INFO, "prepare: clearing packets at socket");
   size_t cleared = dada_sock_clear_buffered_packets(ctx->sock->fd, UDP_PAYLOAD);
+  syslog(LOG_INFO, "prepare2: cleared packets at socket");
 
   // setup the next_seq to the initial value
   //ctx->last_seq = 0;
@@ -1117,6 +1118,7 @@ int main (int argc, char *argv[]) {
   /* START WHAT WAS in RECV THREAD */
 
   // DEFINITIONS
+  syslog(LOG_INFO, "definitions");
 
   // lookup table for ant order
   uint64_t ant_lookup[100], vv;
@@ -1195,7 +1197,7 @@ int main (int argc, char *argv[]) {
 	  got = recvfrom ( udpdb.sock->fd, udpdb.sock->buf, UDP_PAYLOAD, 0, NULL, NULL );
 
 	  //log_packet_details(udpdb.sock->buf, got);
-	  syslog(LOG_INFO, "Received packet of size %zd", got);
+	  //syslog(LOG_INFO, "Received packet of size %zd", got);
 	  
 	  if (got == UDP_PAYLOAD) 
 	    {
