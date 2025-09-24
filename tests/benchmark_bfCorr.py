@@ -48,6 +48,7 @@ print(f"Using NBEAMS={NBEAMS}, NCHAN_PER_PACKET={NCHAN_PER_PACKET} from casm_def
 #SAMPLING_TIME_US = 16.384  # microseconds per sample
 SAMPLING_TIME_US = 32.768  # microseconds per sample
 
+
 # Expected data production time per block (in seconds)
 EXPECTED_BLOCK_TIME = (NPACKETS_PER_BLOCK * SAMPLING_TIME_US) / 1_000_000
 
