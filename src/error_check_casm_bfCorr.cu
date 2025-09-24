@@ -56,6 +56,17 @@ using std::endl;
   } \
 }
 
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
+{
+   if (code != cudaSuccess) 
+   {
+      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+      if (abort) exit(code);
+   }
+}
+
+
 /* global variables */
 int DEBUG = 0;
 
@@ -134,16 +145,16 @@ void initialize(dmem * d, int bf, int subtract_ib, int nbase_val) {
   
   // for correlator
   if (bf==0) {
-    cudaMallocHost((void**)&d->h_pinned_input, sizeof(char)*NPACKETS_PER_BLOCK*NANTS*NCHAN_PER_PACKET*2*2);
-    cudaMalloc((void **)(&d->d_input), sizeof(char)*NPACKETS_PER_BLOCK*NANTS*NCHAN_PER_PACKET*2*2);
-    cudaMalloc((void **)(&d->d_r), sizeof(half)*NCHAN_PER_PACKET*2*NANTS*NPACKETS_PER_BLOCK*2);
-    cudaMalloc((void **)(&d->d_i), sizeof(half)*NCHAN_PER_PACKET*2*NANTS*NPACKETS_PER_BLOCK*2);
-    cudaMalloc((void **)(&d->d_tx), sizeof(char)*NPACKETS_PER_BLOCK*NANTS*NCHAN_PER_PACKET*2*2);
-    cudaMalloc((void **)(&d->d_output), sizeof(float)*nbase_val*NCHAN_PER_PACKET*2*2);
-    cudaMalloc((void **)(&d->d_outr), sizeof(half)*NCHAN_PER_PACKET*2*2*NANTS*NANTS*halfFac);
-    cudaMalloc((void **)(&d->d_outi), sizeof(half)*NCHAN_PER_PACKET*2*2*NANTS*NANTS*halfFac);
-    cudaMalloc((void **)(&d->d_tx_outr), sizeof(half)*NCHAN_PER_PACKET*2*2*NANTS*NANTS*halfFac);
-    cudaMalloc((void **)(&d->d_tx_outi), sizeof(half)*NCHAN_PER_PACKET*2*2*NANTS*NANTS*halfFac);
+    gpuErrchk( cudaMallocHost((void**)&d->h_pinned_input, sizeof(char)*NPACKETS_PER_BLOCK*NANTS*NCHAN_PER_PACKET*2*2) );
+    gpuErrchk( cudaMalloc((void **)(&d->d_input), sizeof(char)*NPACKETS_PER_BLOCK*NANTS*NCHAN_PER_PACKET*2*2) );
+    gpuErrchk( cudaMalloc((void **)(&d->d_r), sizeof(half)*NCHAN_PER_PACKET*2*NANTS*NPACKETS_PER_BLOCK*2) );
+    gpuErrchk( cudaMalloc((void **)(&d->d_i), sizeof(half)*NCHAN_PER_PACKET*2*NANTS*NPACKETS_PER_BLOCK*2) );
+    gpuErrchk( cudaMalloc((void **)(&d->d_tx), sizeof(char)*NPACKETS_PER_BLOCK*NANTS*NCHAN_PER_PACKET*2*2) );
+    gpuErrchk( cudaMalloc((void **)(&d->d_output), sizeof(float)*nbase_val*NCHAN_PER_PACKET*2*2) );
+    gpuErrchk( cudaMalloc((void **)(&d->d_outr), sizeof(half)*NCHAN_PER_PACKET*2*2*NANTS*NANTS*halfFac) );
+    gpuErrchk( cudaMalloc((void **)(&d->d_outi), sizeof(half)*NCHAN_PER_PACKET*2*2*NANTS*NANTS*halfFac) );
+    gpuErrchk( cudaMalloc((void **)(&d->d_tx_outr), sizeof(half)*NCHAN_PER_PACKET*2*2*NANTS*NANTS*halfFac) );
+    gpuErrchk( cudaMalloc((void **)(&d->d_tx_outi), sizeof(half)*NCHAN_PER_PACKET*2*2*NANTS*NANTS*halfFac) );
 
     // timers
     d->cp = 0.;
@@ -155,25 +166,25 @@ void initialize(dmem * d, int bf, int subtract_ib, int nbase_val) {
 
   // for beamformer
   if (bf==1) {
-    cudaMalloc((void **)(&d->d_input), sizeof(char)*(NPACKETS_PER_BLOCK)*(NANTS)*NCHAN_PER_PACKET*2*2);
-    cudaMalloc((void **)(&d->d_big_input), sizeof(char)*(NPACKETS_PER_BLOCK)*(NANTS)*NCHAN_PER_PACKET*2*2);
-    cudaMalloc((void **)(&d->d_htx), sizeof(half)*(NPACKETS_PER_BLOCK/4)*(NCHAN_PER_PACKET/8)*(NBEAMS)*8*2);
-    cudaMalloc((void **)(&d->d_ibsum), sizeof(half)*(NCHAN_PER_PACKET/8)*8*2*NPACKETS_PER_BLOCK);
-    cudaMalloc((void **)(&d->d_bar), sizeof(half)*(NCHAN_PER_PACKET/8)*8*2*NPACKETS_PER_BLOCK*(NANTS));
-    cudaMalloc((void **)(&d->d_bai), sizeof(half)*(NCHAN_PER_PACKET/8)*8*2*NPACKETS_PER_BLOCK*(NANTS));
-    cudaMalloc((void **)(&d->d_bbr), sizeof(half)*(NCHAN_PER_PACKET/8)*8*2*NPACKETS_PER_BLOCK*(NANTS));
-    cudaMalloc((void **)(&d->d_bbi), sizeof(half)*(NCHAN_PER_PACKET/8)*8*2*NPACKETS_PER_BLOCK*(NANTS));
-    cudaMalloc((void **)(&d->weights_a_r), sizeof(half)*2*(NCHAN_PER_PACKET/8)*(NBEAMS)*(NANTS));
-    cudaMalloc((void **)(&d->weights_a_i), sizeof(half)*2*(NCHAN_PER_PACKET/8)*(NBEAMS)*(NANTS));
-    cudaMalloc((void **)(&d->weights_b_r), sizeof(half)*2*(NCHAN_PER_PACKET/8)*(NBEAMS)*(NANTS));
-    cudaMalloc((void **)(&d->weights_b_i), sizeof(half)*2*(NCHAN_PER_PACKET/8)*(NBEAMS)*(NANTS));
-    cudaMalloc((void **)(&d->d_bigbeam_a_r), sizeof(half)*(NCHAN_PER_PACKET/8)*(NBEAMS)*8*2*NPACKETS_PER_BLOCK);
-    cudaMalloc((void **)(&d->d_bigbeam_a_i), sizeof(half)*(NCHAN_PER_PACKET/8)*(NBEAMS)*8*2*NPACKETS_PER_BLOCK);
-    cudaMalloc((void **)(&d->d_bigbeam_b_r), sizeof(half)*(NCHAN_PER_PACKET/8)*(NBEAMS)*8*2*NPACKETS_PER_BLOCK);
-    cudaMalloc((void **)(&d->d_bigbeam_b_i), sizeof(half)*(NCHAN_PER_PACKET/8)*(NBEAMS)*8*2*NPACKETS_PER_BLOCK);
-    cudaMalloc((void **)(&d->d_bigpower), sizeof(unsigned char)*(NPACKETS_PER_BLOCK/4)*(NCHAN_PER_PACKET/8)*(NBEAMS));
-    cudaMalloc((void **)(&d->d_chscf), sizeof(float)*NBEAMS); // beam scale factor
-    cudaMalloc((void **)(&d->d_flagants), sizeof(int)*NANTS); // flag ants
+    gpuErrchk( cudaMalloc((void **)(&d->d_input), sizeof(char)*(NPACKETS_PER_BLOCK)*(NANTS)*NCHAN_PER_PACKET*2*2) );
+    gpuErrchk( cudaMalloc((void **)(&d->d_big_input), sizeof(char)*(NPACKETS_PER_BLOCK)*(NANTS)*NCHAN_PER_PACKET*2*2) );
+    gpuErrchk( cudaMalloc((void **)(&d->d_htx), sizeof(half)*(NPACKETS_PER_BLOCK/4)*(NCHAN_PER_PACKET/8)*(NBEAMS)*8*2) );
+    gpuErrchk( cudaMalloc((void **)(&d->d_ibsum), sizeof(half)*(NCHAN_PER_PACKET/8)*8*2*NPACKETS_PER_BLOCK) );
+    gpuErrchk( cudaMalloc((void **)(&d->d_bar), sizeof(half)*(NCHAN_PER_PACKET/8)*8*2*NPACKETS_PER_BLOCK*(NANTS)) );
+    gpuErrchk( cudaMalloc((void **)(&d->d_bai), sizeof(half)*(NCHAN_PER_PACKET/8)*8*2*NPACKETS_PER_BLOCK*(NANTS)) );
+    gpuErrchk( cudaMalloc((void **)(&d->d_bbr), sizeof(half)*(NCHAN_PER_PACKET/8)*8*2*NPACKETS_PER_BLOCK*(NANTS)) );
+    gpuErrchk( cudaMalloc((void **)(&d->d_bbi), sizeof(half)*(NCHAN_PER_PACKET/8)*8*2*NPACKETS_PER_BLOCK*(NANTS)) );
+    gpuErrchk( cudaMalloc((void **)(&d->weights_a_r), sizeof(half)*2*(NCHAN_PER_PACKET/8)*(NBEAMS)*(NANTS)) );
+    gpuErrchk( cudaMalloc((void **)(&d->weights_a_i), sizeof(half)*2*(NCHAN_PER_PACKET/8)*(NBEAMS)*(NANTS)) );
+    gpuErrchk( cudaMalloc((void **)(&d->weights_b_r), sizeof(half)*2*(NCHAN_PER_PACKET/8)*(NBEAMS)*(NANTS)) );
+    gpuErrchk( cudaMalloc((void **)(&d->weights_b_i), sizeof(half)*2*(NCHAN_PER_PACKET/8)*(NBEAMS)*(NANTS)) );
+    gpuErrchk( cudaMalloc((void **)(&d->d_bigbeam_a_r), sizeof(half)*(NCHAN_PER_PACKET/8)*(NBEAMS)*8*2*NPACKETS_PER_BLOCK) );
+    gpuErrchk( cudaMalloc((void **)(&d->d_bigbeam_a_i), sizeof(half)*(NCHAN_PER_PACKET/8)*(NBEAMS)*8*2*NPACKETS_PER_BLOCK) );
+    gpuErrchk( cudaMalloc((void **)(&d->d_bigbeam_b_r), sizeof(half)*(NCHAN_PER_PACKET/8)*(NBEAMS)*8*2*NPACKETS_PER_BLOCK) );
+    gpuErrchk( cudaMalloc((void **)(&d->d_bigbeam_b_i), sizeof(half)*(NCHAN_PER_PACKET/8)*(NBEAMS)*8*2*NPACKETS_PER_BLOCK) );
+    gpuErrchk( cudaMalloc((void **)(&d->d_bigpower), sizeof(unsigned char)*(NPACKETS_PER_BLOCK/4)*(NCHAN_PER_PACKET/8)*(NBEAMS)) );
+    gpuErrchk( cudaMalloc((void **)(&d->d_chscf), sizeof(float)*NBEAMS) ); // beam scale factor
+    gpuErrchk( cudaMalloc((void **)(&d->d_flagants), sizeof(int)*NANTS) ); // flag ants
     d->h_chscf = (float *)malloc(sizeof(float)*NBEAMS);
     d->h_chscf2 = (float *)malloc(sizeof(float)*NBEAMS);
     
@@ -181,7 +192,7 @@ void initialize(dmem * d, int bf, int subtract_ib, int nbase_val) {
     d->h_winp = (float *)malloc(sizeof(float)*(NANTS*2+NANTS*(NCHAN_PER_PACKET/8)*2*2));
     d->flagants = (int *)malloc(sizeof(int)*NANTS);
     d->h_freqs = (float *)malloc(sizeof(float)*(NCHAN_PER_PACKET/8));
-    cudaMalloc((void **)(&d->d_freqs), sizeof(float)*(NCHAN_PER_PACKET/8));
+    gpuErrchk( cudaMalloc((void **)(&d->d_freqs), sizeof(float)*(NCHAN_PER_PACKET/8)) );
 
     // timers
     d->cp = 0.;
@@ -1046,9 +1057,9 @@ void calc_weights(dmem * d) {
   float *d_antpos_e, *d_antpos_n, *d_calibs;
   int * flagas = (int *)malloc(sizeof(int)*NANTS);
   float wnorm;
-  cudaMalloc((void **)(&d_antpos_e), sizeof(float)*NANTS);
-  cudaMalloc((void **)(&d_antpos_n), sizeof(float)*NANTS);
-  cudaMalloc((void **)(&d_calibs), sizeof(float)*NANTS*(NCHAN_PER_PACKET/8)*2*2);
+  gpuErrchk( cudaMalloc((void **)(&d_antpos_e), sizeof(float)*NANTS) );
+  gpuErrchk( cudaMalloc((void **)(&d_antpos_n), sizeof(float)*NANTS) );
+  gpuErrchk( cudaMalloc((void **)(&d_calibs), sizeof(float)*NANTS*(NCHAN_PER_PACKET/8)*2*2) );
 
   // deal with antpos and calibs
   int iant, found;
@@ -1113,7 +1124,7 @@ int main (int argc, char *argv[]) {
   fprintf(stderr, "DEBUG: Program entered main().\n");
   fflush(stderr); // Force it to print NOW
 
-  //cudaSetDevice(1);
+  cudaSetDevice(1);
   
   fprintf(stderr, "DEBUG: cudaSetDevice(1) completed.\n");
   fflush(stderr);
@@ -1141,7 +1152,7 @@ int main (int argc, char *argv[]) {
   int test = 0;
   float mydec = 33.0;
   char ftest[200], fflagants[200], fcalib[200], fpower[200];
-  float sfreq = 450.0e6f;
+  float sfreq = 450.0;
   int subtract_ib = 0;
   
   while ((arg=getopt(argc,argv,"c:i:o:t:f:a:s:g:p:kbdh")) != -1)
@@ -1339,12 +1350,13 @@ int main (int argc, char *argv[]) {
       syslog(LOG_ERR,"could not open calibss file\n");
       exit(1);
     }
+    //ptr,count,size (4 bytes -> float),file/stream
+    //NANTS Eastings + NANTS northings (2 * NANTS)
     fread(d.h_winp,NANTS*2+NANTS*(NCHAN_PER_PACKET/8)*2*2,4,ff);
     fclose(ff);
 
     for (iii=0;iii<(NCHAN_PER_PACKET/8);iii++)
-      //d.h_freqs[iii] = 1e6f*(sfreq - iii*BW_MHZ/1024.f);
-      d.h_freqs[iii] = sfreq - iii*NCHAN_WIDTH;
+      d.h_freqs[iii] = 1e6f*(sfreq - iii*BW_MHZ/1024.f);
     cudaMemcpy(d.d_freqs,d.h_freqs,sizeof(float)*(NCHAN_PER_PACKET/8),cudaMemcpyHostToDevice);
 
     // calculate weights

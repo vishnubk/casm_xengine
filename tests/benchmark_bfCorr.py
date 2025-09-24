@@ -6,9 +6,9 @@ import statistics
 import signal
 import psutil
 from datetime import datetime
-
+import sys
 junkdb = False
-dir = '/home/user/software/casm_xengine/src'
+dirname = '/home/user/vishnu/code/casm_xengine/src'
 in_key = 'daaa'
 out_key = 'dddd'
 in_block_size = 1073741824
@@ -29,14 +29,14 @@ def read_casm_def():
     nchan = 512   # default fallback
     
     try:
-        with open(f"{dir}/casm_def.h", "r") as f:
+        with open(f"{dirname}/casm_def.h", "r") as f:
             for line in f:
                 if line.strip().startswith("#define NBEAMS"):
                     nbeams = int(line.split()[-1])
                 elif line.strip().startswith("#define NCHAN_PER_PACKET"):
                     nchan = int(line.split()[-1])
     except FileNotFoundError:
-        print(f"Warning: {dir}/casm_def.h not found, using defaults")
+        print(f"Warning: {dirname}/casm_def.h not found, using defaults")
     except Exception as e:
         print(f"Warning: Error reading casm_def.h: {e}, using defaults")
     
@@ -44,7 +44,9 @@ def read_casm_def():
 
 
 NBEAMS, NCHAN_PER_PACKET = read_casm_def()
-SAMPLING_TIME_US = 16.384  # microseconds per sample
+print(f"Using NBEAMS={NBEAMS}, NCHAN_PER_PACKET={NCHAN_PER_PACKET} from casm_def.h")
+#SAMPLING_TIME_US = 16.384  # microseconds per sample
+SAMPLING_TIME_US = 32.768  # microseconds per sample
 
 # Expected data production time per block (in seconds)
 EXPECTED_BLOCK_TIME = (NPACKETS_PER_BLOCK * SAMPLING_TIME_US) / 1_000_000
@@ -68,7 +70,9 @@ except Exception:
 
 # Create new databases
 print("Creating DADA databases...")
+print(f"Running 'dada_db -k {in_key} -b {in_block_size} -n 4'")
 os.system(f"dada_db -k {in_key} -b {in_block_size} -n 4")
+print(f"Running 'dada_db -k {out_key} -b {out_block_size} -n 4'")
 os.system(f"dada_db -k {out_key} -b {out_block_size} -n 4")
 
 
@@ -78,8 +82,9 @@ if junkdb:
     os.system(f"dada_junkdb -k {in_key} -t 3600 header.txt")
 else:
     # Start fake_writer in background and capture its PID
-    fake_writer_cmd = f"{dir}/fake_writer"
+    fake_writer_cmd = f"{dirname}/fake_writer"
     fake_writer_process = subprocess.Popen(fake_writer_cmd, shell=True)
+    print(f"Running command: {fake_writer_cmd}")
     print(f"Started fake_writer with PID: {fake_writer_process.pid}")
 time.sleep(2)  # Give more time for processes to start
 
@@ -97,8 +102,9 @@ real_time_ratios = []
 
 
 # Run beamformer and capture output
-cmd = (f"{dir}/casm_bfCorr -b -i {in_key} -o {out_key} "
-       f"-f {dir}/empty.flags -a {dir}/dummy.calib -p {dir}/powers.out")
+cmd = (f"{dirname}/casm_bfCorr -b -i {in_key} -o {out_key} "
+       f"-f {dirname}/empty.flags -a {dirname}/dummy.calib -p {dirname}/powers.out")
+print(f"Running command: {cmd}")
 process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
                           stderr=subprocess.PIPE, text=True, bufsize=1)
 
