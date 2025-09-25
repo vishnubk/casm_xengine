@@ -73,7 +73,7 @@
 #define NOUTBLOCKS 15 // number of input blocks stored by trigger
 #define NANTS 256
 #define NCHAN_PER_PACKET 512
-#define NBEAMS 1024
+#define NBEAMS 512
 
 // for beamformer
 //#define sep 1.0 // arcmin
@@ -82,6 +82,7 @@
 #define BEAM_OUT 23
 #define NSTREAMS 4
 #define NBP 8 // number of previous BPs to average
+#define NCHAN_WIDTH 30517.578125 // freq. channel width in Hz (125MHz/4096)
 
 // for second corner turn
 #define FIL_PORT0 6625 // port for first chan group
