@@ -5,7 +5,7 @@ NVCC := /usr/bin/nvcc
 CC   := gcc
 
 # --- Common Flags and Paths ---
-COMMON_CFLAGS   := -g -O3 -std=c++14 -arch=sm_75 -Xcompiler="-pthread"
+COMMON_CFLAGS   := -g -O3 -std=c++14 -arch=sm_89 -Xcompiler="-pthread"
 COMMON_INCLUDES := -I/usr/local/cuda/include -I/usr/local/include/psrdada -I/usr/local/include/src
 COMMON_LIBPATHS := -L/usr/local/cuda/lib64 -L/usr/local/lib 
 
@@ -29,6 +29,9 @@ LIBS_FAKEWRITER     := -lpsrdada -lpthread -lm
 # --- Project 1: casm_bfCorr ---
 TARGET_BFCORR := casm_bfCorr
 SRC_BFCORR    := casm_bfCorr.cu
+# --- Vishnu Debugging ------
+TARGET_BFCORR_DEBUG  := error_check_casm_bfCorr
+SRC_BFCORR_DEBUG     := error_check_casm_bfCorr.cu
 LIBS_BFCORR   := -lpsrdada -lcublas
 
 # --- Project 2: frb_search_pipeline ---
@@ -41,11 +44,18 @@ LIBS_PIPELINE   := -lpsrdada -lcublas -ldedisp -lnppc -lnppi -lnpps -lcurand
 # --- Build Rules ---
 
 # Default: build all executables
-all: $(TARGET_BFCORR) $(TARGET_PIPELINE) $(TARGET_CAPTURE) $(TARGET_FAKEWRITER)
+all: $(TARGET_BFCORR) $(TARGET_BFCORR_DEBUG) $(TARGET_PIPELINE) $(TARGET_CAPTURE) $(TARGET_FAKEWRITER)
 
 # Build casm_bfCorr
 $(TARGET_BFCORR): $(SRC_BFCORR) casm_def.h
 	@echo "--- Compiling $(TARGET_BFCORR) ---"
+	$(NVCC) -o $@ $< $(COMMON_CFLAGS) $(COMMON_INCLUDES) \
+           $(COMMON_LIBPATHS) $(LIBS_BFCORR)
+
+#---- Vishnu Debugging ----
+# Build error_check_casm_bfCorr
+$(TARGET_BFCORR_DEBUG): $(SRC_BFCORR_DEBUG) casm_def.h
+	@echo "--- Compiling $(TARGET_BFCORR_DEBUG) ---"
 	$(NVCC) -o $@ $< $(COMMON_CFLAGS) $(COMMON_INCLUDES) \
            $(COMMON_LIBPATHS) $(LIBS_BFCORR)
 
@@ -73,6 +83,6 @@ $(TARGET_FAKEWRITER): $(SRC_FAKEWRITER)
 # Clean up all targets
 clean:
 	@echo "--- Cleaning up all targets ---"
-	rm -f $(TARGET_BFCORR) $(TARGET_PIPELINE) $(TARGET_CAPTURE) $(TARGET_FAKEWRITER)
+	rm -f $(TARGET_BFCORR) $(TARGET_BFCORR_DEBUG) $(TARGET_PIPELINE) $(TARGET_CAPTURE) $(TARGET_FAKEWRITER)
 
 .PHONY: all clean
