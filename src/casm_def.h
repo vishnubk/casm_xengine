@@ -66,7 +66,7 @@
 #define TRIGGER_CONTROL_PORT 11227
 
 #define NPACKETS_PER_CALL 2048
-#define NPACKETS_PER_BLOCK 2048
+#define NPACKETS_PER_BLOCK  1024
 #define NPACKETS_INTS 2048 // number of packets per xgpu int
 #define NPACKETS_PER_FIL 2
 #define NPACKETS 2048

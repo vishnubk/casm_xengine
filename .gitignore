@@ -1,2 +1,5 @@
 *.fil
 ./data/*
+tests/benchmark_results*
+tests/old_benchmarking_results
+

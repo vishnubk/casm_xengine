@@ -859,6 +859,8 @@ void dbeamformer(dmem * d) {
   const long long int strideB = (NBEAMS)*(NANTS);
   const long long int strideC = (NBEAMS)*8*2*NPACKETS_PER_BLOCK;
   const int batchCount = NCHAN_PER_PACKET/8;
+
+  printf("m %d n %d k %d\n", m, n, k);
   
   // create streams
   cudaStream_t streams[2];
@@ -881,7 +883,7 @@ void dbeamformer(dmem * d) {
   d->cp = 0;
   begin = clock();
   cudaMemcpyAsync(d->d_input, d->h_input, NPACKETS_PER_BLOCK*NANTS*NCHAN_PER_PACKET*4, cudaMemcpyHostToDevice, streams[0]);
-  //cudaDeviceSynchronize();
+  cudaDeviceSynchronize();
   end = clock();
   d->cp += (float)(end - begin) / CLOCKS_PER_SEC;
   
@@ -890,7 +892,7 @@ void dbeamformer(dmem * d) {
   begin = clock();
   dim3 dimBlock1(32, 8), dimGrid1(NCHAN_PER_PACKET*2/32,(NPACKETS_PER_BLOCK)*(NANTS)/32);
   transpose_fluff_bf<<<dimGrid1,dimBlock1,0,streams[0]>>>((unsigned short *)(d->d_input), d->d_bar, d->d_bai, d->d_bbr, d->d_bbi);
-  //cudaDeviceSynchronize();
+  cudaDeviceSynchronize();
   end = clock();
   d->prep += (float)(end - begin) / CLOCKS_PER_SEC;
 
@@ -961,7 +963,7 @@ void dbeamformer(dmem * d) {
   cudaDeviceSynchronize();
   end = clock();
   d->cubl += (float)(end - begin) / CLOCKS_PER_SEC;
-  
+      
   // form total power, sum/transpose twice
   d->outp = 0;
   begin = clock();
@@ -974,7 +976,7 @@ void dbeamformer(dmem * d) {
 
   dim3 dimBlock(32, 8), dimGrid((NBEAMS)/32,(NPACKETS_PER_BLOCK/4)*(NCHAN_PER_PACKET/8)/32);
   sum_transpose_and_scale_output<<<dimGrid,dimBlock,0,streams[0]>>>(d->d_htx,d->d_bigpower,d->subtract_ib);
-  //cudaDeviceSynchronize();
+  cudaDeviceSynchronize();
   end = clock();
   d->outp += (float)(end - begin) / CLOCKS_PER_SEC;
 
@@ -983,11 +985,12 @@ void dbeamformer(dmem * d) {
 
   cublasDestroy(cublasH);
 
-  // form sum over times
-//   sum_beam<<<NBEAMS,512>>>(d->d_bigpower,d->d_chscf);
-//   cudaMemcpy(d->h_chscf,d->d_chscf,4*NBEAMS,cudaMemcpyDeviceToHost);
-//   sum_beam_2<<<NBEAMS,512>>>(d->d_bigpower,d->d_chscf);
-//   cudaMemcpy(d->h_chscf2,d->d_chscf,4*NBEAMS,cudaMemcpyDeviceToHost);
+  // form sum over times 
+  // AJ disabled as this crashes
+  //sum_beam<<<NBEAMS,512>>>(d->d_bigpower,d->d_chscf);
+  //cudaMemcpy(d->h_chscf,d->d_chscf,4*NBEAMS,cudaMemcpyDeviceToHost);
+  //sum_beam_2<<<NBEAMS,512>>>(d->d_bigpower,d->d_chscf);
+  //cudaMemcpy(d->h_chscf2,d->d_chscf,4*NBEAMS,cudaMemcpyDeviceToHost);
   
 }
 
@@ -1119,7 +1122,7 @@ int main (int argc, char *argv[]) {
   fprintf(stderr, "DEBUG: Program entered main().\n");
   fflush(stderr); // Force it to print NOW
 
-  //cudaSetDevice(1);
+  cudaSetDevice(1);
   
   fprintf(stderr, "DEBUG: cudaSetDevice(1) completed.\n");
   fflush(stderr);
@@ -1147,8 +1150,7 @@ int main (int argc, char *argv[]) {
   int test = 0;
   float mydec = 33.0;
   char ftest[200], fflagants[200], fcalib[200], fpower[200];
-  //float sfreq = 450.0;
-  float sfreq = 450.0e6f;
+  float sfreq = 450.0;
   int subtract_ib = 0;
   
   while ((arg=getopt(argc,argv,"c:i:o:t:f:a:s:g:p:kbdh")) != -1)
@@ -1350,8 +1352,7 @@ int main (int argc, char *argv[]) {
     fclose(ff);
 
     for (iii=0;iii<(NCHAN_PER_PACKET/8);iii++)
-      //d.h_freqs[iii] = 1e6f*(sfreq - iii*BW_MHZ/1024.f);
-       d.h_freqs[iii] = sfreq - iii*NCHAN_WIDTH;
+      d.h_freqs[iii] = 1e6f*(sfreq - iii*BW_MHZ/1024.f);
     cudaMemcpy(d.d_freqs,d.h_freqs,sizeof(float)*(NCHAN_PER_PACKET/8),cudaMemcpyHostToDevice);
 
     // calculate weights
@@ -1558,7 +1559,7 @@ int main (int argc, char *argv[]) {
     d.h_input = ipcio_open_block_read (hdu_in->data_block, &bytes_read, &block_id);
 
     // do stuff
-    begin = clock();
+    //begin = clock();
     if (bf==0) {
       if (DEBUG) syslog(LOG_INFO,"run correlator");
       dcorrelator(&d, nbase_val);
@@ -1588,7 +1589,6 @@ int main (int argc, char *argv[]) {
     }
     end = clock();
     time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-    cout << "time spent " << time_spent << " s" << endl;
     cout << "NBEAMS=" << NBEAMS << " NANTS=" << NANTS << " ";
     cout << "spent time " << d.cp << " " << d.prep << " " << d.cubl << " " << d.outp << " s" << endl;
     cout << "  (copy=" << d.cp*1000 << "ms prep=" << d.prep*1000 << "ms cublas=" << d.cubl*1000 << "ms output=" << d.outp*1000 << "ms)" << endl;

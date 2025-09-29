@@ -8,48 +8,69 @@ import psutil
 from datetime import datetime
 import sys
 junkdb = False
-dirname = '/home/casm/software/vishnu/casm_xengine/src'
+dir = '/home/casm/software/vishnu/casm_xengine/src'
 in_key = 'daaa'
 out_key = 'dddd'
-in_block_size = 1073741824 // 2
-out_block_size = 16777216  // 2
+#in_block_size = 1073741824 / 8
+#out_block_size = 16777216 / 8  # These are halved because NPACKETS_PER_BLOCK in casm_def.h has been halved to prevent ooms
 
 timeout_seconds = 15  # 120 seconds timeout
 
 # Constants for calculations
-NPACKETS_PER_BLOCK = 2048
+#NPACKETS_PER_BLOCK = 2048 # Factor of two larger than the value in casm_def.h since casm_bfCorr assumes 2 samples per packet
 NANTS = 256
-
+SAMPLES_PER_PACKET = 2  # Each packet has 2 time samples per antenna
 # Read NBEAMS and NCHAN_PER_PACKET from casm_def.h
-
 
 def read_casm_def():
     """Read NBEAMS and NCHAN_PER_PACKET from casm_def.h"""
     nbeams = 256  # default fallback
     nchan = 512   # default fallback
+    npackets_per_block = 2048  # default fallback
     
     try:
-        with open(f"{dirname}/casm_def.h", "r") as f:
+        with open(f"{dir}/casm_def.h", "r") as f:
             for line in f:
                 if line.strip().startswith("#define NBEAMS"):
                     nbeams = int(line.split()[-1])
                 elif line.strip().startswith("#define NCHAN_PER_PACKET"):
                     nchan = int(line.split()[-1])
+                elif line.strip().startswith("#define NPACKETS_PER_BLOCK"):
+                    print("Found NPACKETS_PER_BLOCK definition in casm_def.h")
+                    npackets_per_block = int(line.split()[-1])
+
     except FileNotFoundError:
-        print(f"Warning: {dirname}/casm_def.h not found, using defaults")
+        print(f"Warning: {dir}/casm_def.h not found, using defaults")
     except Exception as e:
         print(f"Warning: Error reading casm_def.h: {e}, using defaults")
     
-    return nbeams, nchan
+    return nbeams, nchan, npackets_per_block
+
+def compute_sizes(NPACKETS_PER_BLOCK, NANTS, NCHAN_PER_PACKET, NBEAMS):
+    # ---- What casm_bfCorr actually uses per “block” (beamformer -b path) ----
+    # Input (bytes): NPACKETS_PER_BLOCK * NANTS * NCHAN_PER_PACKET * 2(times) * 2(pols)
+    in_block = NPACKETS_PER_BLOCK * NANTS * NCHAN_PER_PACKET * 2 * 2
+
+    # Output (bytes): (NPACKETS_PER_BLOCK/4) * (NCHAN_PER_PACKET/8) * NBEAMS * 1 byte
+    # (after sum/transpose kernels; one byte per beam power sample)
+    if NPACKETS_PER_BLOCK % 4 != 0:
+        raise ValueError("NPACKETS_PER_BLOCK must be divisible by 4 for beamformer layout.")
+    if NCHAN_PER_PACKET % 8 != 0:
+        raise ValueError("NCHAN_PER_PACKET must be divisible by 8 for beamformer layout.")
+
+    out_block = (NPACKETS_PER_BLOCK // 4) * (NCHAN_PER_PACKET // 8) * NBEAMS
+    return in_block, out_block
+
+NBEAMS, NCHAN_PER_PACKET, NPACKETS_PER_BLOCK = read_casm_def()
+in_block_size = 1073741824 
+out_block_size = 16777216
+#in_block_size, out_block_size = compute_sizes(NPACKETS_PER_BLOCK, NANTS, NCHAN_PER_PACKET, NBEAMS)
 
 
-NBEAMS, NCHAN_PER_PACKET = read_casm_def()
-print(f"Using NBEAMS={NBEAMS}, NCHAN_PER_PACKET={NCHAN_PER_PACKET} from casm_def.h")
-#SAMPLING_TIME_US = 16.384  # microseconds per sample
-SAMPLING_TIME_US = 32.768  # microseconds per sample
-
+print(f"Using NBEAMS={NBEAMS}, NCHAN_PER_PACKET={NCHAN_PER_PACKET}, NPACKETS_PER_BLOCK={NPACKETS_PER_BLOCK}, SAMPLES_PER_PACKET={SAMPLES_PER_PACKET}, in_block_size={in_block_size}, out_block_size={out_block_size}")
+SAMPLING_TIME_US = 16.384    # microseconds per sample
 # Expected data production time per block (in seconds)
-EXPECTED_BLOCK_TIME = (NPACKETS_PER_BLOCK * SAMPLING_TIME_US) / 1_000_000
+EXPECTED_BLOCK_TIME = (NPACKETS_PER_BLOCK * SAMPLES_PER_PACKET * SAMPLING_TIME_US) / 1_000_000
 
 print("=== CASM Beamformer Benchmark ===")
 print("Configuration:")
@@ -63,16 +84,20 @@ print()
 
 # Clean up existing databases
 try:
-    os.system(f"dada_db -k {in_key} -d")
-    os.system(f"dada_db -k {out_key} -d")
+     print("Cleaning up existing DADA databases...")
+     print(f"Running: dada_db -k {in_key} -d")
+     print(f"Running: dada_db -k {out_key} -d")
+     os.system(f"dada_db -k {in_key} -d")
+     os.system(f"dada_db -k {out_key} -d")
 except Exception:
     pass
 
 # Create new databases
 print("Creating DADA databases...")
-print(f"Running 'dada_db -k {in_key} -b {in_block_size} -n 4'")
+# AJ commented these out for optimized testing
+print(f"Running: dada_db -k {in_key} -b {in_block_size} -n 4")
 os.system(f"dada_db -k {in_key} -b {in_block_size} -n 4")
-print(f"Running 'dada_db -k {out_key} -b {out_block_size} -n 4'")
+print(f"Running: dada_db -k {out_key} -b {out_block_size} -n 4")
 os.system(f"dada_db -k {out_key} -b {out_block_size} -n 4")
 
 
@@ -82,9 +107,8 @@ if junkdb:
     os.system(f"dada_junkdb -k {in_key} -t 3600 header.txt")
 else:
     # Start fake_writer in background and capture its PID
-    fake_writer_cmd = f"{dirname}/fake_writer"
+    fake_writer_cmd = f"{dir}/fake_writer"
     fake_writer_process = subprocess.Popen(fake_writer_cmd, shell=True)
-    print(f"Running command: {fake_writer_cmd}")
     print(f"Started fake_writer with PID: {fake_writer_process.pid}")
 time.sleep(2)  # Give more time for processes to start
 
@@ -102,9 +126,12 @@ real_time_ratios = []
 
 
 # Run beamformer and capture output
-cmd = (f"{dirname}/casm_bfCorr -b -i {in_key} -o {out_key} "
-       f"-f {dirname}/empty.flags -a {dirname}/dummy.calib -p {dirname}/powers.out")
-print(f"Running command: {cmd}")
+cmd = (f"{dir}/casm_bfCorr -d -b -i {in_key} -o {out_key} "
+      f"-f {dir}/empty.flags -a {dir}/dummy.calib -p {dir}/powers.out")
+#cmd = (f"{dir}/error_check_casm_bfCorr -b -i {in_key} -o {out_key} "
+#       f"-f {dir}/empty.flags -a {dir}/dummy.calib -p {dir}/powers.out")
+
+print(cmd)
 process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
                           stderr=subprocess.PIPE, text=True, bufsize=1)
 
@@ -152,6 +179,7 @@ try:
                 output_time = float(match.group(4))
                 
                 total_time = copy_time + prep_time + cublas_time + output_time
+                print(f"Block {line_count}: Total time = {total_time:.6f} s")
                 real_time_ratio = EXPECTED_BLOCK_TIME / total_time
                 
                 # Store values
