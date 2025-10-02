@@ -7,7 +7,7 @@ CC   := gcc
 # --- Common Flags and Paths ---
 COMMON_CFLAGS   := -g -O3 -std=c++14 -arch=sm_89 -Xcompiler="-pthread"
 COMMON_INCLUDES := -I/usr/local/cuda/include -I/usr/local/include/psrdada -I/usr/local/psrdada/include -I/usr/local/include/src
-COMMON_LIBPATHS := -L/usr/local/cuda/lib64 -L/usr/local/lib -L/usr/local/psrdada/lib 
+COMMON_LIBPATHS := -L/usr/local/cuda/lib64 -L/usr/local/lib -L/usr/local/psrdada/lib -L/usr/lib/x86_64-linux-gnu 
 
 # --- casm_capture (DADA capture) ---
 TARGET_CAPTURE   := casm_capture
@@ -39,7 +39,7 @@ TARGET_PIPELINE := casm_hella
 SRC_PIPELINE    := casm_hella.cu
 DEDISP_INCLUDES := -I/usr/local/include
 DEDISP_LIBPATHS := -L/usr/local/lib
-LIBS_PIPELINE   := -lpsrdada -lcublas -ldedisp -lnppc -lnppi -lnpps -lcurand
+LIBS_PIPELINE   := -lpsrdada -lcublas -ldedisp -lnppc -lnppif -lnppisu -lnppist -lnppig -lnppidei -lnppim -lnppial -lnpps -lcurand
 
 # --- Build Rules ---
 

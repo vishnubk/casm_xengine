@@ -2085,7 +2085,9 @@ int main(int argc, char *argv[]) {
   if (p.inp_format==0) {
 
     sscanf(p.inp_path, "%x", &in_key);
-    hdu_in  = dada_hdu_create ();
+    multilog_t* log = multilog_open("casm_hella", LOG_INFO);
+
+    hdu_in  = dada_hdu_create (log);
     dada_hdu_set_key (hdu_in, in_key);
     dada_hdu_connect (hdu_in);
     dada_hdu_lock_read (hdu_in);
@@ -2095,7 +2097,8 @@ int main(int argc, char *argv[]) {
     syslog(LOG_INFO,"Connected to dada buffer\n");
 
     sscanf(p.dada_out, "%x", &out_key);
-    hdu_out  = dada_hdu_create ();
+
+    hdu_out  = dada_hdu_create (log);
     dada_hdu_set_key (hdu_out, out_key);
     dada_hdu_connect (hdu_out);
     dada_hdu_lock_write(hdu_out);
